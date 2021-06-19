@@ -1,15 +1,14 @@
 ---
-title: Hands-on training session 1
+title: Session 1
 subtitle: Introduction, revision and running basic models
 date: "`r Sys.Date()`"
 author:
   - Matt Denwood
-  - Giles Innocent
 theme: metropolis
 aspectratio: 43
 colortheme: seahorse
 header-includes: 
-  - \input{preamble}
+  - \input{../preamble}
 params:
   presentation: TRUE
 output:
@@ -40,13 +39,15 @@ set.seed(2020-02-18)
 
 Date/time:
 
-  - 19th February 2020
-  - 14.00 - 15.30
+  - 28th June to 1st July 2021
+  - 09.00 - 12.30
 
 Teachers:
 
-  - Matt Denwood (presenter)
-  - Giles Innocent
+  - Matt Denwood (University Of Copenhagen)
+  - Nils Toft (IQinAbox)
+  - Søren Saxmose Nielsen (University Of Copenhagen)
+  - Maj Beldring Henningsen (University of Copenhagen)
 
 
 # Revision
