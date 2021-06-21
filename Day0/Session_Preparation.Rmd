@@ -29,7 +29,7 @@ This document will help you to prepare for the HARMONY training workshop on diag
 
 You need to install R (version 4.0.0 or later; preferably version 4.1.0) from https://cran.r-project.org/ and we recommend that you also use Rstudio which can be downloaded separately from https://www.rstudio.com/products/rstudio/download/
 
-Please also install the latest versions of the following R packages:  PriorGen, rjags, runjags, coda, TeachingDemos
+Please also install the latest versions of the following R packages from CRAN:  tidyverse, PriorGen, rjags, runjags, coda, TeachingDemos
 
 You will also need the standalone JAGS software (version 4.3.0 or later) for the course - download the installer for your platform from here:  https://sourceforge.net/projects/mcmc-jags/files/JAGS/4.x/
 
@@ -37,6 +37,7 @@ To check that you have installed the software correctly please run the following
 
 ```{r, results="hide", message=FALSE}
 stopifnot(getRversion() >= "4.0.0")
+stopifnot(require('tidyverse'))
 stopifnot(require('PriorGen'))
 stopifnot(require('rjags'))
 stopifnot(require('runjags'))

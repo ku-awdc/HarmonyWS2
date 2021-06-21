@@ -1,6 +1,6 @@
 ---
 title: Session 1
-subtitle: Introduction, revision and running basic models
+subtitle: A practical introduction to MCMC
 date: "`r Sys.Date()`"
 author:
   - Matt Denwood
@@ -40,7 +40,8 @@ set.seed(2020-02-18)
 Date/time:
 
   - 28th June to 1st July 2021
-  - 09.00 - 12.30
+  - 09.00 - 12.30 daily
+  - Use the same Zoom link all week!
 
 Teachers:
 
@@ -49,6 +50,61 @@ Teachers:
   - Søren Saxmose Nielsen (University Of Copenhagen)
   - Maj Beldring Henningsen (University of Copenhagen)
 
+
+# Motivation
+
+## Diagnostic test evaluation: with gold standard
+
+- Evaluation of a new test against a gold standard is simple!
+
+- Let's simulate some data to illustrate:
+
+```{r}
+se <- c(1, 0.6)
+sp <- c(1, 0.9)
+N <- 1000
+prevalence <- 0.25
+
+library("tidyverse")
+
+data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
+  mutate(Test_1 = Status) %>%
+  mutate(Test_2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status))) %>%
+  print()
+
+twoXtwo <- with(data, table(Test_1, Test_2))
+
+(sensitivity <- twoXtwo[2,2] / sum(twoXtwo[2,1:2]))
+(specificity <- twoXtwo[1,1] / sum(twoXtwo[1,1:2]))
+```
+
+## Diagnostic test evaluation: no gold standard
+
+- What happens when the reference test is imperfect?
+
+```{r}
+se <- c(0.9, 0.6)
+sp <- c(0.95, 0.9)
+N <- 1000
+prevalence <- 0.25
+
+library("tidyverse")
+
+data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
+  mutate(Test_1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
+  mutate(Test_2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status))) %>%
+  print()
+
+twoXtwo <- with(data, table(Test_1, Test_2))
+
+(sensitivity <- twoXtwo[2,2] / sum(twoXtwo[2,1:2]))
+(specificity <- twoXtwo[1,1] / sum(twoXtwo[1,1:2]))
+```
+- We will *always* under-estimate the Se and Sp of the other test!
+
+## The solution
+
+- We can 
 
 # Revision
 
