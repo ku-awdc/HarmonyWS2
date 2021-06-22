@@ -88,13 +88,13 @@ N <- 1000
 prevalence <- 0.25
 
 data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
-  mutate(Test_1 = Status) %>%
-  mutate(Test_2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+  mutate(Test1 = Status) %>%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
 
-(twoXtwo <- with(data, table(Test_1, Test_2)))
+(twoXtwo <- with(data, table(Test1, Test2)))
 ```
 
-- The true $Status$ is always the same as the result of $Test_1$
+- The true $Status$ is always the same as the result of $Test1$
 . . .
 
 ```{r}
@@ -104,7 +104,7 @@ data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
 
 ## Diagnostic test evaluation: no gold standard
 
-- Now we have both values of sensitivity and specificity below 1...
+- Now we have both values of sensitivity and specificity <1...
 
 ```{r}
 se <- c(0.9, 0.6)
@@ -113,10 +113,11 @@ N <- 1000
 prevalence <- 0.25
 
 data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
-  mutate(Test_1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
-  mutate(Test_2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
 
-data %>% count(Status, Test_1, Test_2)
+with(data, table(Status, Test1))
+with(data, table(Status, Test2))
 ```
 
 
@@ -125,7 +126,7 @@ data %>% count(Status, Test_1, Test_2)
 - In real life we don't know what $Status$ is...
 
 ```{r}
-twoXtwo <- with(data, table(Test_1, Test_2))
+(twoXtwo <- with(data, table(Test1, Test2)))
 
 (sensitivity_1 <- twoXtwo[2,2] / sum(twoXtwo[1:2,2]))
 (sensitivity_2 <- twoXtwo[2,2] / sum(twoXtwo[2,1:2]))
@@ -268,13 +269,13 @@ A simple JAGS model might look like this:
 ```{r include=FALSE}
 model_definition <- "model{
   # Likelihood part:
-  Positives ~ dbinom(prevalence, TotalTests)
+  Positives ~ dbinom(prevalence, N)
   
   # Prior part:
   prevalence ~ dbeta(1, 1)
   
   # Hooks for automatic integration with R:
-  #data# Positives, TotalTests
+  #data# Positives, N
   #monitor# prevalence
   #inits# prevalence
 }
@@ -292,9 +293,9 @@ There are two model statements:
 
 - The first:
 ```{r eval=FALSE}
-Positives ~ dbinom(prevalence, TotalTests)
+Positives ~ dbinom(prevalence, N)
 ```
-states that the number of $Positive$ test samples is Binomially distributed with probability parameter $prevalence$ and total trials $TotalTests$
+states that the number of $Positive$ test samples is Binomially distributed with probability parameter $prevalence$ and total trials $N$
 
 . . .
 
@@ -313,7 +314,7 @@ These are very similar to the likelihood and prior functions defined in the prep
 The other lines in this model:
 
 ```{r eval=FALSE}
-#data# Positives, TotalTests
+#data# Positives, N
 #monitor# prevalence
 #inits# prevalence
 ```
@@ -336,7 +337,7 @@ library('runjags')
 
 # data to be retrieved by runjags
 Positives <- 70
-TotalTests <- 100
+N <- 100
 
 # initial values to be retrieved by runjags:
 prevalence <- list(chain1=0.05, chain2=0.95)
@@ -484,7 +485,7 @@ library('runjags')
 
 # data to be retrieved by runjags
 Positives <- 70
-TotalTests <- 100
+N <- 100
 
 # initial values to be retrieved by runjags:
 prevalence <- list(chain1=0.05, chain2=0.95)
@@ -523,12 +524,12 @@ We can fit the same model using frequentist maximum likelihood methods like this
 
 ```{r}
 Positives <- 70
-TotalTests <- 100
+N <- 100
 
 # We can time how long this takes manually:
 system.time({
   # The equivalent model to JAGS:
-  freq_model <- glm(cbind(Positives, TotalTests-Positives) ~ 1, family=binomial)
+  freq_model <- glm(cbind(Positives, N-Positives) ~ 1, family=binomial)
 })
 
 # The intercept of the GLM is on the logit scale, so we need to take the inverse logit transform to get the prevalence:
@@ -561,7 +562,7 @@ Using JAGS allows us to add complexity to basic models, for example including a 
 ```{r include=FALSE}
 model_definition <- "model{
   # Likelihood part:
-  Positives ~ dbinom(observed_prevalence, TotalTests)
+  Positives ~ dbinom(observed_prevalence, N)
   
   # Intermediate calculations:
   observed_prevalence <- sensitivity * prevalence + (1-specificity) * (1-prevalence)
@@ -572,7 +573,7 @@ model_definition <- "model{
   prevalence ~ dbeta(1, 1)
   
   # Hooks for automatic integration with R:
-  #data# Positives, TotalTests
+  #data# Positives, N
   #monitor# prevalence, sensitivity, specificity, observed_prevalence
   #inits# prevalence, sensitivity, specificity
 }
@@ -615,7 +616,7 @@ library('runjags')
 
 # data to be retrieved by runjags:
 Positives <- 70
-TotalTests <- 100
+N <- 100
 
 # initial values to be retrieved by runjags:
 prevalence <- list(chain1=0.05, chain2=0.95)
@@ -677,13 +678,13 @@ There are a large number of other options to runjags.  Some highlights:
 There are three other ways of writing this type of model.  We can replace:
 
 ```{r, eval=FALSE}
-Positives ~ dbinom(observed_prevalence, TotalTests)
+Positives ~ dbinom(observed_prevalence, N)
 ```
 
 with:
 
 ```{r, eval=FALSE}
-for(i in 1:TotalTests){
+for(i in 1:N){
   Result[i] ~ dbern(observed_prevalence)
 }
 ```
@@ -691,7 +692,7 @@ for(i in 1:TotalTests){
 or:
 
 ```{r, eval=FALSE}
-for(i in 1:TotalTests){
+for(i in 1:N){
   NegativePositive[i] ~ dcat(observed_probabilities[1:2])
 }
 observed_probabilities[2] <- observed_prevalence
@@ -701,7 +702,7 @@ observed_probabilities[1] <- 1 - observed_prevalence
 or:
 
 ```{r, eval=FALSE}
-Tally[1:2] ~ dmulti(observed_probabilities[1:2], TotalTests)
+Tally[1:2] ~ dmulti(observed_probabilities[1:2], N)
 
 observed_probabilities[2] <- observed_prevalence
 observed_probabilities[1] <- 1 - observed_prevalence
@@ -732,3 +733,16 @@ Key points:
 unlink('basicjags.txt')
 unlink('obsprevmodel.txt')
 ```
+
+## Summary
+
+- MCMC allows flexibility in models BUT requires more computational resource and user awareness
+
+- Bayesian methods allow priors to be used BUT necessitate that priors are used
+
+- Models are less likely to be identifiable if they:
+  * Are more complex
+  * Have less informative priors
+  * Do not have sufficient data
+
+- There is often a disparity between the model we would like to run and the model we can run given the data available
