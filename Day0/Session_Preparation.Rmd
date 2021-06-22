@@ -427,7 +427,7 @@ Another reason that our samples differed to the true posterior is because the sa
 effectiveSize(samples)
 ```
 
-So we have the equivalent of approximately 41 independent samples from this posterior, which is not nearly enough to be a good approximation.  Ideally we would like at least 500 (or even 1000) independent samples, which means running the simulation for a lot more than 1000 iterations.  For example:
+So we have the equivalent of approximately `r as.numeric(floor(effectiveSize(samples)))` independent samples from this posterior, which is not nearly enough to be a good approximation.  Ideally we would like at least 500 (or even 1000) independent samples, which means running the simulation for a lot more than 1000 iterations.  For example:
 
 ```{r, echo=FALSE}
 set.seed(2021-06-18)
@@ -439,7 +439,7 @@ samples <- metropolis(burnin = 1000, sample = 20000, initial_value=0.05)
 effectiveSize(samples)
 ```
 
-We now have 20000 iterations, which equates to around 667 independent samples (i.e. we need around 30 iterations to get 1 independent sample).  This should be enough to get a decent approximation to the true posterior:
+We now have 20000 iterations, which equates to around `r as.numeric(floor(effectiveSize(samples)))` independent samples (i.e. we need around `r ceiling(20000/as.numeric(floor(effectiveSize(samples))))` iterations to get 1 independent sample).  This should be enough to get a decent approximation to the true posterior:
 
 ```{r, fig.width=6, fig.height=8, echo=FALSE}
 par(mfrow=c(2,1))
@@ -462,12 +462,14 @@ Our sampled posterior is now much closer to the true posterior, although there i
 
 ```{r}
 set.seed(2021-06-18)
-samples <- metropolis(burnin = 1000, sample = 20000, initial_value=0.99, plot=FALSE)
+samples <- metropolis(burnin = 1000, sample = 20000,
+                      initial_value=0.99, plot=FALSE)
 # Mean of samples:
 mean(samples)
 
 set.seed(2021-06-18)
-samples <- metropolis(burnin = 1000, sample = 20000, initial_value=0.99, plot=FALSE)
+samples <- metropolis(burnin = 1000, sample = 20000,
+                      initial_value=0.99, plot=FALSE)
 # Mean of samples:
 mean(samples)
 ```
@@ -476,7 +478,8 @@ These two results are numerically identical because the same seed was used.  But
 
 ```{r}
 set.seed(2021-06-19)
-samples <- metropolis(burnin = 1000, sample = 20000, initial_value=0.99, plot=FALSE)
+samples <- metropolis(burnin = 1000, sample = 20000,
+                      initial_value=0.99, plot=FALSE)
 # Mean of samples:
 mean(samples)
 ```
@@ -552,6 +555,7 @@ effectiveSize(samples)
 Can you find a value of $sigma$ that gives an effective sample size of >= 2000?
 
 ```{r eval=FALSE, include=FALSE, show=FALSE}
+# Around 0.3 is optimal, but between 0.2-0.4 give >2000
 seq(0.1,1,by=0.1) |> {\(s) plot(s,sapply(s, function(x) effectiveSize(metropolis(sigma=x))),xlab="sigma",ylab="effectiveSize")}(); abline(h=2000)
 ```
 
