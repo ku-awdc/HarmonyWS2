@@ -1,4 +1,4 @@
-SRC = $(wildcard Day*/*.Rmd)
+SRC = $(wildcard Day*/Session*.Rmd)
 
 PDF   = $(SRC:.Rmd=.pdf)
 HTML  = $(SRC:.Rmd=.html)
