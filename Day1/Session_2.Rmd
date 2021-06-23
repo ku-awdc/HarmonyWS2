@@ -123,8 +123,8 @@ Tally <- as.numeric(twoXtwo)
 N <- sum(Tally)
 
 prev <- list(chain1=0.05, chain2=0.95)
-se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
-sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+se <- list(chain1=c(0.01,0.99), chain2=c(0.99,0.01))
+sp <- list(chain1=c(0.01,0.99), chain2=c(0.99,0.01))
 
 results <- run.jags('basic_hw.bug', n.chains=2)
 ```
@@ -138,10 +138,13 @@ results
 ```
 
 ```{r echo=FALSE, results="hide"}
-inits1 <- list(.RNG.name="base::Super-Duper", .RNG.seed=1)
-inits2 <- list(.RNG.name="base::Wichmann-Hill", .RNG.seed=2)
+inits1 <- list(.RNG.name="base::Super-Duper", .RNG.seed=8)
+inits2 <- list(.RNG.name="base::Wichmann-Hill", .RNG.seed=9)
 
 results <- run.jags('basic_hw.bug', n.chains=2, inits=list(inits1,inits2), silent.jags=TRUE)
+results
+
+pt <- plot(results)
 ```
 
 ```{r echo=FALSE}
@@ -150,9 +153,84 @@ res[] <- round(res, 3)
 knitr::kable(res)
 ```
 
-- Note the wide confidence intervals!
+- Does anybody spot a problem?
 
-TODO: find/use initial values that give us label switching, and show trace plots
+- - -
+
+```{r echo=FALSE}
+print(pt[["prob[1].plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["prev.plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["se[1].plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["sp[1].plot1"]])
+```
+- - -
+
+```{r echo=FALSE}
+print(pt[["crosscorr"]])
+```
+
+## Label Switching
+
+How to interpret a test with Se=0% and Sp=0%?
+
+. . .
+
+  * The test is perfect - we are just holding it upside down...
+
+. . .
+
+We can force se+sp >= 1:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(1, 1)
+  sp[1] ~ dbeta(1, 1)T(1-se[1], )
+```
+
+Or:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  sp[1] ~ dbeta(1, 1)
+```
+
+This allows the test to be useless, but not worse than useless.
+
+Note: the joint posterior is not necessarily what you would expect
+
+*TODO* show model without data
+
+Alternative: rejection step (ability to be added to JAGS/runjags at some point)
+
+
+- - -
+
+Alternatively we can have the weakly informative priors:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(2, 1)
+  sp[1] ~ dbeta(2, 1)
+```
+
+To give the model some information that we expect the test characteristics to be closer to 100% than 0%.
+
+Or we can use stronger priors for one or both tests.
+
+*TODO*: show results with truncated priors
 
 ## Practicalities
 
@@ -222,45 +300,6 @@ curve(dbeta(x, shape1=429.95, shape2=27.76))
 hpd(qbeta, shape1=429.95, shape2=27.76)
 ```
 
-
-## Label Switching
-
-How to interpret a test with Se=0% and Sp=0%?
-
-. . .
-
-  * The test is perfect - we are just holding it upside down...
-
-. . .
-
-We can force se+sp >= 1:
-
-```{r eval=FALSE}
-  se[1] ~ dbeta(1, 1)
-  sp[1] ~ dbeta(1, 1)T(1-se[1], )
-```
-
-Or:
-
-```{r eval=FALSE}
-  se[1] ~ dbeta(1, 1)T(1-sp[1], )
-  sp[1] ~ dbeta(1, 1)
-```
-
-But not both!
-
-This allows the test to be useless, but not worse than useless.
-
-Alternatively we can have the weakly informative priors:
-
-```{r eval=FALSE}
-  se[1] ~ dbeta(2, 1)
-  sp[1] ~ dbeta(2, 1)
-```
-
-To give the model some information that we expect the test characteristics to be closer to 100% than 0%.
-
-Or we can use stronger priors for one or both tests.
 
 ## Analysing simulated data
 

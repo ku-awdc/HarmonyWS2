@@ -69,10 +69,24 @@ Teachers:
   - Søren Saxmose Nielsen (University Of Copenhagen)
   - Maj Beldring Henningsen (University of Copenhagen)
 
+## HARMONY
 
-# Motivation
+COST action CA18208:  https://harmony-net.eu/about/
 
-## Diagnostic test evaluation: with gold standard = simple!{.fragile}
+Goals are to encourage the use of latent class models/methods for:
+  
+  - Diagnostic test evaluation
+  - Determination of true prevalence
+  - Certification of disease freedom
+  
+Period:  October 2019 - October 2023
+
+Contact:  info@harmony-net.eu
+
+
+# Background
+
+## Diagnostic test evaluation: with gold standard = simple! {.fragile}
 
 `r if(params$presentation) {"\\begin{comment}"}`
 ```{r}
