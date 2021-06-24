@@ -27,6 +27,7 @@ rmarkdown::render('Session_2.Rmd', 'html_document', params=list(presentation=FAL
 
 ```{r setup, include=FALSE}
 library("tidyverse")
+library("runjags")
 set.seed(2021-06-22)
 
 # Reduce the width of R code output for PDF only:
@@ -50,9 +51,10 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
-```
 
-# Session 2:  Basic Hui-Walter models
+# To collect temporary filenames:
+cleanup <- character(0)
+```
 
 ## Hui-Walter Model
 
@@ -99,6 +101,7 @@ cat(hw_definition, sep='', file='basic_hw.bug')
 
 
 ```{r comment='', echo=FALSE}
+cleanup <- c(cleanup, 'basic_hw.bug')
 cat(hw_definition[1], sep='\n')
 ```
 
@@ -181,7 +184,9 @@ print(pt[["sp[1].plot1"]])
 
 - - -
 
-TODO:  add deviance plot
+```{r echo=FALSE}
+print(pt[["deviance.plot1"]])
+```
 
 - - -
 
@@ -215,12 +220,7 @@ Or:
 
 This allows the test to be useless, but not worse than useless.
 
-Note: the joint posterior is not necessarily what you would expect
-
-*TODO* show model without data
-
-Alternative: rejection step (ability to be added to JAGS/runjags at some point)
-
+Note: the joint posterior is not necessarily what you would expect...
 
 - - -
 
@@ -235,24 +235,10 @@ To give the model some information that we expect the test characteristics to be
 
 Or we can use stronger priors for one or both tests.
 
-*TODO*: show results with truncated priors
-
-## Practicalities
-
-- Be **very** vareful with the order of combinations in dmultinom!
-
-- Check your results carefully to ensure they make sense!
-
-- Convergence is more problematic than usual
-
-- These models need A LOT of data, and/or strong priors for one of the tests
-
 
 ## Priors
 
-## A different prior
-
-- A quick way to see the distribution of a prior:
+A quick way to see the distribution of a prior:
 
 ```{r, fig.width=3, fig.height=3}
 curve(dbeta(x, 1, 1), from=0, to=1)
@@ -261,48 +247,67 @@ qbeta(c(0.025,0.975), shape1=1, shape2=1)
 
 ---
 
-- This was minimally informative, but how does that compare to a weakly informative prior for e.g. sensitivity?
+This was minimally informative, but how does that compare to a weakly informative prior for e.g. sensitivity?
 
 ```{r, fig.width=3, fig.height=3}
 curve(dbeta(x, 2, 1), from=0, to=1)
 qbeta(c(0.025,0.975), shape1=2, shape2=1)
 ```
 
-- Or more accurately:
+---
+
+Or more accurately:
 
 ```{r}
 library("TeachingDemos")
 hpd(qbeta, shape1=2, shape2=1)
 ```
 
+. . .
+
+Credible vs confidence intervals:
+
+  - For MCMC these are usually calculated using highest posterior density (HPD) intervals
+  - Therefore there is a difference between:
+      - `qbeta(c(0.025,0.975), ...)`
+      - `hpd(qbeta, ...)`
+  - Technically HPD intervals are credible intervals...
+  
 ---
 
-- What about a more informative prior?
+What about a more informative prior?
 
 ```{r, fig.width=3, fig.height=3}
 curve(dbeta(x, 20, 2), from=0, to=1)
+qbeta(c(0.025,0.975), shape1=20, shape2=2)
 hpd(qbeta, shape1=20, shape2=2)
 ```
 
 ## Choosing a prior
 
-- Typically we are given median and 95% confidence intervals from a paper, e.g.:
+What we want is e.g. Beta(20,1)
+
+But typically we have median and 95% confidence intervals from a paper, e.g.:
 
 "The median (95% CI) estimates of the sensitivity and specificity of the shiny new test were 94% (92-96%) and 99% (97-100%) respectively"
 
-- How can we generate a prior from this?
+. . .
+
+How can we generate a Beta( , ) prior from this?
 
 ## The PriorGen package
 
-"The median (95% CI) estimates of the sensitivity and specificity of the shiny new test were 94% (92-96%) and 99% (97-100%) respectively"
+"The median (95% CI) estimates of the sensitivity and specificity of the shiny new test were 94% (92-96%) and 99% (97-100%)"
 
 ```{r}
 library("PriorGen")
 findbeta(themedian = 0.94, percentile=0.95, percentile.value = 0.92)
+hpd(qbeta, shape1=429.95, shape2=27.76)
 ```
+---
+
 ```{r}
 curve(dbeta(x, shape1=429.95, shape2=27.76))
-hpd(qbeta, shape1=429.95, shape2=27.76)
 ```
 
 
@@ -324,6 +329,9 @@ twoXtwo <- with(data, table(Test1, Test2))
 Tally <- as.numeric(twoXtwo)
 ```
 
+. . .
+
+We know that e.g. the first test has Sensitivity of 90% and Specificity of 95% - so the model *should* be able to tell us that...
 
 # Practical Session 2
 
@@ -333,25 +341,25 @@ Tally <- as.numeric(twoXtwo)
 
 1. How does changing the prior distributions for the se and sp of one test affect the inference for the other test parameters?
 
-## Priors
 
-- We cannot estimate `se`, `sp` and `prevalence` simultaneously
-  
-  * We need strong priors for se and sp
+`r if(params$presentation) {"\\begin{comment}"}`
 
-- We can use the PriorGen package to generate Beta priors based on published results, for example:
+## Exercise plan TODO
 
-```{r}
-PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.8)
-```
+- Simulate data with different sample sizes and analyse it using:
+  - Model with minimally informative priors for everything
+  - Truncated minimally informative priors
+  - Informative priors for one test (give them median and 95% CI estimates)
 
----
+- Change the simulated prevalence
+  - Low prevalence = Sp can be estimated
+  - High prevalence = Se can be estimated
 
-```{r}
-qbeta(c(0.025, 0.5, 0.975), 41.82, 4.65)
-curve(dbeta(x, 41.82, 4.65), from=0, to=1)
-```
+Optional:
 
+- Explore prior - likelihood conflict
+  - Priors taken from manufacturer's numbers
+  - Real-world Se/Sp lower - observe bias in posterior
 
 ## Exercise {.fragile}
 
@@ -364,8 +372,6 @@ curve(dbeta(x, 41.82, 4.65), from=0, to=1)
 
 - Modify the imperfect test model using these priors and re-estimate prevalence
 
-
-`r if(params$presentation) {"\\begin{comment}"}`
 
 ## Solution {.fragile}
 
@@ -408,6 +414,7 @@ cat(imperfect_definition, file='basicimperfect.bug')
 
 ```{r comment='', echo=FALSE}
 cat(imperfect_definition, sep='\n')
+cleanup <- c(cleanup, 'basicimperfect.bug')
 ```
 
 Results:
@@ -424,8 +431,6 @@ results
 
 This time we get sensible estimates for `prevalence`.
 
-`r if(params$presentation) {"\\end{comment}"}`
-
 ## Optional Exercise {.fragile}
 
 - Run the same model with se and sp fixed to the mean estimate
@@ -436,8 +441,6 @@ This time we get sensible estimates for `prevalence`.
 
   * How does this affect estimates and CI for prevalence?
 
-
-`r if(params$presentation) {"\\begin{comment}"}`
 
 ## Optional Solution {.fragile}
 
@@ -511,36 +514,18 @@ Biased estimates for `prevalence`!
 
 `r if(params$presentation) {"\\end{comment}"}`
 
-`r if(params$presentation) {"\\begin{comment}"}`
-
-## Exercise plan TODO
-
-- Simulate data with different sample sizes and analyse it using:
-  - Model with minimally informative priors for everything
-  - Truncated minimally informative priors
-  - Informative priors for one test (give them median and 95% CI estimates)
-
-- Change the simulated prevalence
-  - Low prevalence = Sp can be estimated
-  - High prevalence = Se can be estimated
-
-Optional:
-
-- Explore prior - likelihood conflict
-  - Priors taken from manufacturer's numbers
-  - Real-world Se/Sp lower - observe bias in posterior
-
-`r if(params$presentation) {"\\end{comment}"}`
-
 
 ## Summary {.fragile}
 
-- Hui-Walter models are like `pulling a rabbit out of a hat`, but:
+- Hui-Walter models can do magical things, but:
   - They typically exhibit high autocorrelation
-  - They may not converge immediately
-  - We need a larger sample for the same effective sample size
+  - They may not converge
+  - Need a larger sample for the same effective sample size
   
 - More informative priors for one test will
   - Improve identifiability of the model
   - Impact the inference for all other parameters in the model!
 
+```{r include=FALSE}
+unlink(cleanup)
+```

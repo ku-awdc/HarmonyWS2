@@ -26,7 +26,7 @@ rmarkdown::render('Session_1.Rmd', 'html_document', params=list(presentation=FAL
 ```
 
 ```{r setup, include=FALSE}
-library("tidyverse")
+library("runjags")
 set.seed(2021-06-22)
 
 # Reduce the width of R code output for PDF only:
@@ -50,6 +50,9 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
+
+# To collect temporary filenames:
+cleanup <- character(0)
 ```
 
 # Course Outline and Practicalities
@@ -70,16 +73,6 @@ Teachers:
   - Maj Beldring Henningsen (University of Copenhagen)
 
 
-## Practical information
-
-All of the material is on the GitHub repository - remember to pull changes at least daily!
-
-Recordings of the sessions will be made available via our website
-  - Feel free to share these plus the teaching material with your colleagues
-  
-
-
-
 ## HARMONY
 
 COST action CA18208:  https://harmony-net.eu/about/
@@ -95,18 +88,31 @@ Period:  October 2019 - October 2023
 Contact:  info@harmony-net.eu
 
 
+## Practical information on the course
+
+- All of the material is on the GitHub repository
+  - We may tweak material as we go along
+  - Remember to pull changes at the start of each day!
+
+. . .
+
+- Recordings of the sessions will put onto our website
+  - The link will be sent out following the course
+  - Feel free to share this with your colleagues
+
+. . .
+
+- Attendance registration is necessary for COST meetings
+  - We will take care of this via Zoom
+
+  
 # Background
 
 ## Diagnostic test evaluation: with gold standard = simple! {.fragile}
 
-`r if(params$presentation) {"\\begin{comment}"}`
+
 ```{r}
 library("tidyverse")
-```
-`r if(params$presentation) {"\\end{comment}"}`
-
-
-```{r}
 se <- c(1, 0.6)
 sp <- c(1, 0.9)
 N <- 1000
@@ -119,7 +125,7 @@ data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
 (twoXtwo <- with(data, table(Test1, Test2)))
 ```
 
-- The true $Status$ is always the same as the result of $Test1$
+The true `Status` is always the same as the result of `Test1`
 . . .
 
 ```{r}
@@ -129,7 +135,7 @@ data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
 
 ## Diagnostic test evaluation: no gold standard
 
-- Now we have both values of sensitivity and specificity <1...
+Now we have both values of sensitivity and specificity <1...
 
 ```{r}
 se <- c(0.9, 0.6)
@@ -145,10 +151,9 @@ with(data, table(Status, Test1))
 with(data, table(Status, Test2))
 ```
 
+---
 
-## Diagnostic test evaluation: no gold standard
-
-- In real life we don't know what $Status$ is...
+In real life we don't know what `Status` is...
 
 ```{r}
 (twoXtwo <- with(data, table(Test1, Test2)))
@@ -160,20 +165,22 @@ with(data, table(Status, Test2))
 ```
 . . .
 
-- So we will *always* under-estimate the Se and Sp of both tests!
+So we will *always* under-estimate the Se and Sp of both tests!
 
 ## The solution
 
-- We need to assess the sensitivity and specificity of both tests against the true (but unknown) $Status$ of each individual
+- We need to assess the sensitivity and specificity of both tests against the true (but unknown) `Status` of each individual
 
-- This unknown $Status$ is called the `latent class`
+- This unknown `Status` is called the `latent class`
   - Therefore we need to run a `latent class model` ...
 
 . . .
 
 - How can we implement a latent class model?
-  - Frequentist statistical methods:  possible, but difficult
-  - Bayesian statistical methods:  easier and much more commonly done!
+  - Frequentist statistical methods:
+      - possible, but difficult
+  - Bayesian statistical methods:
+      - easier and much more commonly done!
 
 
 ## Learning outcomes
@@ -237,17 +244,13 @@ $$P(\theta|Y) \propto P(\theta)\times P(Y|\theta)$$
 
 ## Preparation
 
-- *TODO: online poll for how difficult they found the homework!!*
+Any questions so far?  Anything unclear?
 
-- *TODO: online poll for prior experience with MCMC!!*
+. . .
 
-- *TODO: online poll for prior experience with LCM!!*
+Do we all have R and JAGS installed?
 
-- Any questions so far?  Anything unclear?
-
-- Do we all have R and JAGS installed?
-
-- Can we all access the teaching material from GitHub?
+Can we all access the teaching material from GitHub?
 
 . . .
 
@@ -258,7 +261,7 @@ $$P(\theta|Y) \propto P(\theta)\times P(Y|\theta)$$
 
 ## MCMC in Practice
 
-- We can write a Metropolis algorithm but this is complex and inefficient
+- We can write a Metropolis algorithm ourselves, but this is complex and inefficient
 
 - There are a number of general purpose langauages that allow us to define the problem and leave the details to the software:
 
@@ -320,7 +323,7 @@ There are two model statements:
 ```{r eval=FALSE}
 Positives ~ dbinom(prevalence, N)
 ```
-states that the number of $Positive$ test samples is Binomially distributed with probability parameter $prevalence$ and total trials $N$
+states that the number of `Positive` test samples is Binomially distributed with probability parameter `prevalence` and total trials `N`
 
 . . .
 
@@ -328,7 +331,7 @@ states that the number of $Positive$ test samples is Binomially distributed with
 ```{r eval=FALSE}
 prevalence ~ dbeta(1,1)
 ```
-states that our prior probability distribution for the parameter $prevalence$ is Beta(1,1), which is the same as Uniform(0,1)
+states that our prior probability distribution for the parameter `prevalence` is Beta(1,1), which is the same as Uniform(0,1)
 
 . . .
 
@@ -367,8 +370,6 @@ N <- 100
 # initial values to be retrieved by runjags:
 prevalence <- list(chain1=0.05, chain2=0.95)
 ```
-
----
 
 ```{r include=FALSE}
 runjags.options(silent.jags=TRUE)
@@ -435,7 +436,8 @@ Reminder:  we want psrf < 1.05 and SSeff > 1000
 
 ## Introduction to practical sessions
 
-- Each practical session will consist of:
+Each practical session will consist of:
+
   1. Some general/philosophical points to consider
   2. One or more practical exercises for everyone to complete
   3. One or more additional (optional) exercise for those that finish the main exercise early
@@ -443,7 +445,9 @@ Reminder:  we want psrf < 1.05 and SSeff > 1000
 
 . . .
 
-- Consideration points are given in the PDF but the exercises (and solutions) are only in the HTML versions
+Consideration points are given in the PDF
+
+The exercises (and solutions) are only in the HTML versions
 
 ## Introduction to practical sessions
 
@@ -463,8 +467,6 @@ Reminder:  we want psrf < 1.05 and SSeff > 1000
 1. What are the advantages and disadvantages of Bayesian MCMC relative to more standard frequentist likelihood-based methods?
 
 2. `Identifiability` refers to the ability of a model to extract useful information from a dataset for a particular set of parameters. What 3 things affect whether or not a model/parameter will be identifiable?
-
-. . .
 
 The exercises can be found in Session_1.html!
 
@@ -503,7 +505,7 @@ Your JAGS model (basicjags.txt) should look like this:
 cat(model_definition, sep='\n')
 ```
 
-And your R code (Session 1 exercises.R) should look like this:
+And your R code (Session 1 exercises.R) should look like this (where lines starting with `##` show the output of running that line of code):
 
 ```{r}
 library('runjags')
@@ -521,6 +523,10 @@ results <- run.jags('basicjags.txt', n.chains=2, burnin=5000, sample=10000)
 # check convergence and effective sample size, and then interpret results:
 plot(results)
 results
+```
+
+```{r echo=FALSE}
+cleanup <- c(cleanup, "basicjags.txt")
 ```
 
 Convergence is assessed in two ways:  firstly from the trace plots, and secondly from the psrf (Gelman-Rubin statistic).  The effective sample size is SSeff.  Once you are happy that the model has converged and has enough of a sample size, then you can interpret the results (typically median and 95% confidence interval estimates).
@@ -615,6 +621,7 @@ cat(model_definition, file='obsprevmodel.txt')
 
 ```{r comment='', echo=FALSE}
 cat(model_definition, sep='\n')
+cleanup <- c(cleanup, "obsprevmodel.txt")
 ```
 
 Copy this model to "obsprevmodel.txt" and run it yourself in JAGS.  Here is some additional R code that you will need:
@@ -630,7 +637,7 @@ specificity <- list(chain1=0.05, chain2=0.95)
 
 - Look at the posteriors for the 4 parameters of interest.  What do you notice about identifiability?
 
-- Now set the true prevalence parameter to a fixed value of 80% by commenting out the $prevalence ~ dbeta(1, 1)$ line and adding $prevalence <- 0.8$ in the model. What happens to identifiability now?
+- Now set the true prevalence parameter to a fixed value of 80% by commenting out the `prevalence ~ dbeta(1, 1)` line and adding `prevalence <- 0.8` in the model. What happens to identifiability now?
 
 - Can you do a similar thing by fixing the sensitivity and specificity parameters to values of 0.9 and 0.99?
 
@@ -741,9 +748,9 @@ observed_probabilities[1] <- 1 - observed_prevalence
 ```
 
 In each case the data is different:
-- $dbern$ needs the response to be a vector of 0 and 1 reflecting test results for individuals, but uses the same probability as dbinom
-- $dcat$ needs the response to be a vector of 1 and 2 reflecting the outcome (1=negative, 2=positive) of the test, and uses a pair of probabilities reflecting the probability of being negative and probability of being positive
-- $dmulti$ needs the response to be a Tally of the total number of negative tests and positive tests, and uses the same pair of probabilities as $dcat$
+- `dbern` needs the response to be a vector of 0 and 1 reflecting test results for individuals, but uses the same probability as dbinom
+- `dcat` needs the response to be a vector of 1 and 2 reflecting the outcome (1=negative, 2=positive) of the test, and uses a pair of probabilities reflecting the probability of being negative and probability of being positive
+- `dmulti` needs the response to be a Tally of the total number of negative tests and positive tests, and uses the same pair of probabilities as `dcat`
 
 Try to implement these models in JAGS, and see what difference it makes to (a) the model inference, and (b) the amount of time that the model takes to run.
 
@@ -761,12 +768,7 @@ Key points:
 
 `r if(params$presentation) {"\\end{comment}"}`
 
-```{r cleanup, include=FALSE}
-unlink('basicjags.txt')
-unlink('obsprevmodel.txt')
-```
-
-## Summary
+## Summary {.fragile}
 
 - MCMC allows flexibility in models BUT requires more computational resource and user awareness
   * Convergence
@@ -780,3 +782,8 @@ unlink('obsprevmodel.txt')
   * Do not have sufficient data
 
 - There is often a disparity between the model we would like to run and the model we can run given the data available
+
+
+```{r include=FALSE}
+unlink(cleanup)
+```

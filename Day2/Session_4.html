@@ -173,11 +173,9 @@ pre code {
 </div>
 
 
-<div id="session-4-multi-test-multi-population-models" class="section level1">
-<h1>Session 4: Multi-test, multi-population models</h1>
 <div id="why-stop-at-two-tests" class="section level2">
 <h2>Why stop at two tests?</h2>
-<p>In <code>traditional</code> diagnostic test evaluation, one test is assumed to be a gold standard from which all other tests are evaluated</p>
+<p>In <em>traditional</em> diagnostic test evaluation, one test is assumed to be a gold standard from which all other tests are evaluated</p>
 <p>So it makes no difference if you assess one test at a time or do multiple tests at the same time</p>
 <p>Using a latent class model each new test adds new information - so we should analyse all available test results in the same model</p>
 </div>
@@ -507,59 +505,59 @@ results</code></pre>
 <tbody>
 <tr class="odd">
 <td align="left">se[1]</td>
-<td align="right">0.566</td>
-<td align="right">0.709</td>
-<td align="right">0.841</td>
-<td align="right">8856</td>
-<td align="right">1.001</td>
+<td align="right">0.564</td>
+<td align="right">0.710</td>
+<td align="right">0.839</td>
+<td align="right">9524</td>
+<td align="right">1</td>
 </tr>
 <tr class="even">
 <td align="left">se[2]</td>
 <td align="right">0.835</td>
-<td align="right">0.940</td>
+<td align="right">0.941</td>
 <td align="right">1.000</td>
-<td align="right">6039</td>
-<td align="right">1.000</td>
+<td align="right">5351</td>
+<td align="right">1</td>
 </tr>
 <tr class="odd">
 <td align="left">sp[1]</td>
-<td align="right">0.812</td>
+<td align="right">0.808</td>
 <td align="right">0.909</td>
-<td align="right">0.992</td>
-<td align="right">7737</td>
-<td align="right">1.000</td>
+<td align="right">0.990</td>
+<td align="right">8176</td>
+<td align="right">1</td>
 </tr>
 <tr class="even">
 <td align="left">sp[2]</td>
-<td align="right">0.820</td>
-<td align="right">0.928</td>
+<td align="right">0.815</td>
+<td align="right">0.927</td>
 <td align="right">1.000</td>
-<td align="right">5775</td>
-<td align="right">1.001</td>
+<td align="right">6344</td>
+<td align="right">1</td>
 </tr>
 <tr class="odd">
 <td align="left">prev[1]</td>
-<td align="right">0.001</td>
+<td align="right">0.002</td>
 <td align="right">0.100</td>
-<td align="right">0.228</td>
-<td align="right">7827</td>
-<td align="right">1.000</td>
+<td align="right">0.230</td>
+<td align="right">7187</td>
+<td align="right">1</td>
 </tr>
 <tr class="even">
 <td align="left">prev[2]</td>
-<td align="right">0.246</td>
-<td align="right">0.442</td>
-<td align="right">0.646</td>
-<td align="right">9366</td>
-<td align="right">1.000</td>
+<td align="right">0.237</td>
+<td align="right">0.443</td>
+<td align="right">0.647</td>
+<td align="right">8801</td>
+<td align="right">1</td>
 </tr>
 <tr class="odd">
 <td align="left">prev[3]</td>
-<td align="right">0.761</td>
-<td align="right">0.886</td>
+<td align="right">0.760</td>
+<td align="right">0.884</td>
 <td align="right">0.996</td>
-<td align="right">7541</td>
-<td align="right">1.000</td>
+<td align="right">7208</td>
+<td align="right">1</td>
 </tr>
 <tr class="even">
 <td align="left">covse12</td>
@@ -589,7 +587,6 @@ results</code></pre>
 <li><p>There must be a single column for the population (as a factor), and all of the other columns (either factor, logical or numeric) are interpreted as being test results</p></li>
 </ul>
 <p>NB: change priors, turn on/off covariances, add deviance monitor</p>
-</div>
 </div>
 <div id="practical-session-4" class="section level1">
 <h1>Practical session 4</h1>
@@ -697,40 +694,40 @@ results &lt;- run.jags(&#39;auto3tichw.bug&#39;)</code></pre>
 <pre class="r"><code>results
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                     
-##            Lower95      Median    Upper95        Mean        SD Mode
-## se[1]      0.65943     0.70399    0.74455     0.70291  0.021672   --
-## se[2]       0.7051     0.74953    0.79505     0.74905   0.02296   --
-## se[3]      0.85736     0.90586    0.94154     0.90279  0.021852   --
-## sp[1]      0.84232     0.87332    0.90341     0.87287  0.015808   --
-## sp[2]       0.8341     0.86477    0.89584     0.86441  0.015776   --
-## sp[3]        0.937     0.98099    0.99995     0.97583   0.02029   --
-## prev[1]    0.27979     0.32074    0.35796        0.32  0.019914   --
-## prev[2]    0.69705     0.73569    0.77996     0.73703  0.021109   --
-## covse12    0.01058    0.020834   0.032624     0.02106 0.0055192   --
-## covsp12   0.033661    0.047295   0.060828    0.047312 0.0068989   --
-## covse13  -0.027072   -0.017449 -0.0042196    -0.01669 0.0059814   --
-## covsp13 -0.0051135   0.0010764   0.010606   0.0018635 0.0038826   --
-## covse23  -0.022456   -0.013394 0.00047567   -0.012435 0.0061072   --
-## covsp23 -0.0074448 -0.00046638  0.0041339 -0.00097288 0.0028306   --
-##                                                  
-##               MCerr MC%ofSD SSeff   AC.10    psrf
-## se[1]    0.00069652     3.2   968 0.34713  1.0066
-## se[2]    0.00087946     3.8   682 0.44757  1.0044
-## se[3]    0.00070042     3.2   973 0.37709  1.0118
-## sp[1]    0.00036674     2.3  1858 0.18549  1.0001
-## sp[2]    0.00038367     2.4  1691 0.17834  1.0017
-## sp[3]    0.00092872     4.6   477 0.62064 0.99996
-## prev[1]   0.0007234     3.6   758 0.36153  1.0019
-## prev[2]  0.00059284     2.8  1268 0.28528  1.0148
-## covse12  0.00015897     2.9  1205 0.26794   1.008
-## covsp12  0.00021071     3.1  1072 0.33877  1.0002
-## covse13  0.00022036     3.7   737 0.43647  1.0152
-## covsp13 0.000092958     2.4  1744 0.19026  1.0005
-## covse23   0.0002177     3.6   787 0.44918  1.0148
-## covsp23  0.00010046     3.5   794 0.36727 0.99995
+##                                                                                
+##            Lower95      Median   Upper95        Mean        SD Mode       MCerr
+## se[1]      0.52387     0.56535   0.72597     0.59404  0.064321   --    0.015194
+## se[2]         0.56     0.60159   0.77479     0.63237  0.068884   --    0.014989
+## se[3]      0.65463     0.70121   0.92413     0.74551   0.09183   --    0.022807
+## sp[1]      0.84658     0.88029   0.91134     0.87969  0.016627   --  0.00042176
+## sp[2]      0.83687     0.87055   0.90093     0.87003   0.01644   --  0.00036083
+## sp[3]      0.95181     0.99066   0.99999     0.98491  0.015675   --  0.00076946
+## prev[1]     0.2931     0.41673   0.47439     0.40081  0.052716   --   0.0089777
+## prev[2]    0.72019     0.95584         1     0.90673   0.10093   --    0.023525
+## covse12   0.015439    0.058336  0.069071    0.050542  0.017281   --   0.0040539
+## covsp12   0.033606     0.04619  0.059407    0.046298 0.0065806   --  0.00015526
+## covse13  -0.022788    0.030137   0.04086    0.019989  0.021233   --   0.0054027
+## covsp13 -0.0036498     0.00109 0.0096007   0.0019465 0.0031804   -- 0.000070891
+## covse23  -0.018344    0.035425  0.045896    0.025111  0.021545   --   0.0054683
+## covsp23 -0.0051081 0.000062663  0.004276 -0.00013222 0.0021794   -- 0.000067615
+##                                     
+##         MC%ofSD SSeff   AC.10   psrf
+## se[1]      23.6    18 0.93813 1.0398
+## se[2]      21.8    21 0.94599 1.0365
+## se[3]      24.8    16 0.96331 1.0392
+## sp[1]       2.5  1554 0.18214 1.0019
+## sp[2]       2.2  2076 0.12643 1.0041
+## sp[3]       4.9   415 0.60701  1.012
+## prev[1]      17    34 0.84916 1.0292
+## prev[2]    23.3    18 0.95558 1.0145
+## covse12    23.5    18 0.94441 1.0366
+## covsp12     2.4  1796 0.18374 1.0001
+## covse13    25.4    15 0.96106 1.0409
+## covsp13     2.2  2013 0.14696 1.0001
+## covse23    25.4    16 0.96331 1.0399
+## covsp23     3.1  1039 0.29774 1.0042
 ## 
-## Total time taken: 3.7 seconds</code></pre>
+## Total time taken: 4.7 seconds</code></pre>
 <p>This chains haven’t converged (check out the psrf): the model is (or is close to being) unidentifiable.</p>
 </div>
 <div id="summary" class="section level2 fragile">

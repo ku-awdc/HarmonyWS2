@@ -51,6 +51,9 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
+
+# To collect temporary filenames:
+cleanup <- character(0)
 ```
 
 # Session 6:  Coping with missing data
@@ -137,3 +140,7 @@ Optional:
 - MNAR is bad news
 
 - Deliberately making observations missing is a good way to assess model assumptions
+
+```{r include=FALSE}
+unlink(cleanup)
+```

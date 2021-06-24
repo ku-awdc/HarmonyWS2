@@ -51,13 +51,14 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
-```
 
-# Session 4:  Multi-test, multi-population models
+# To collect temporary filenames:
+cleanup <- character(0)
+```
 
 ## Why stop at two tests?
 
-In `traditional` diagnostic test evaluation, one test is assumed to be a gold standard from which all other tests are evaluated
+In *traditional* diagnostic test evaluation, one test is assumed to be a gold standard from which all other tests are evaluated
 
 So it makes no difference if you assess one test at a time or do multiple tests at the same time
 
@@ -515,3 +516,6 @@ Homework:  think about what exactly the latent class is in these situations:
 
 1. Two antibody tests 
 
+```{r include=FALSE}
+unlink(cleanup)
+```

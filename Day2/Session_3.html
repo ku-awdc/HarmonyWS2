@@ -173,8 +173,6 @@ pre code {
 </div>
 
 
-<div id="session-3-multi-population-hui-walter-models" class="section level1">
-<h1>Session 3: Multi-population Hui-Walter models</h1>
 <div id="recap" class="section level2">
 <h2>Recap</h2>
 <ul>
@@ -188,6 +186,8 @@ pre code {
 </ul></li>
 </ul>
 </div>
+<div id="multi-population-hui-walter-models" class="section level1">
+<h1>Multi-population Hui-Walter models</h1>
 <div id="hui-walter-models-with-multiple-populations" class="section level2">
 <h2>Hui-Walter models with multiple populations</h2>
 <ul>
@@ -249,13 +249,20 @@ pre code {
 <div id="multiple-populations-assumptions" class="section level2">
 <h2>Multiple populations: assumptions</h2>
 <ul>
-<li><p>We typically assume that the sensitivity and specificity <em>must</em> be consistent between populations</p>
+<li>We typically assume that the sensitivity and specificity <em>must</em> be consistent between populations
 <ul>
-<li>Do you have an endemic and epidemic population? Or vaccinated and unvaccinated?</li>
+<li>Do you have an endemic and epidemic population?</li>
+<li>Or vaccinated and unvaccinated?</li>
 </ul></li>
-<li><p>It helps if the prevalence differs between the populations</p></li>
-<li><p>The populations can be artificial (e.g. age groups) but must not be decided based on the diagnostic test results</p></li>
 </ul>
+<div class="incremental">
+<ul>
+<li>The populations can be artificial (e.g. age groups) but must not be decided based on the diagnostic test results
+<ul>
+<li>It helps if the prevalence differs between the populations</li>
+</ul></li>
+</ul>
+</div>
 </div>
 <div id="multiple-populations-special-cases" class="section level2">
 <h2>Multiple populations: special cases</h2>
@@ -265,12 +272,17 @@ pre code {
 <li>Contains strong data regarding specificity</li>
 <li>As long as specificity can be assumed to be the same in the other populations</li>
 </ul></li>
-<li>A small experimentally infected group MAY be helpful but it is sometimes difficult to assume that sensitivity is consistent</li>
+</ul>
+<div class="incremental">
+<ul>
+<li>A small experimentally infected group MAY be helpful but it is often dangerous to assume that sensitivity is consistent!</li>
 </ul>
 </div>
-<div id="incorporating-additional-data" class="section level2">
-<h2>Incorporating additional data</h2>
-<p><em>TODO</em> model formulation with special groups of known disease status (Or is it easier just to specify the prevalence as 0 or 1 in data??)</p>
+</div>
+<div id="incorporating-populations-with-known-prevalence" class="section level2">
+<h2>Incorporating populations with known prevalence</h2>
+<p>Up to now prevalence has been a parameter, but it can also be (partially) observed:</p>
+<p><em>TODO</em></p>
 </div>
 <div id="other-runjags-options" class="section level2">
 <h2>Other runjags options</h2>
@@ -287,9 +299,7 @@ pre code {
 </div>
 <div id="using-embedded-character-strings" class="section level2">
 <h2>Using embedded character strings</h2>
-<ul>
-<li>For simple models we might not want to bother with an external text file. Then we can do:</li>
-</ul>
+<p>For simple models we might not want to bother with an external text file. Then we can do:</p>
 <pre class="r"><code>mt &lt;- &quot;
 model{
   Positives ~ dbinom(prevalence, TotalTests)
@@ -303,17 +313,14 @@ model{
 Positives &lt;- 7
 TotalTests &lt;- 10
 prevalence &lt;- list(chain1=0.01, chain2=0.99)
-results &lt;- run.jags(mt, n.chains=2)
-## Loading required namespace: rjags</code></pre>
+results &lt;- run.jags(mt, n.chains=2)</code></pre>
 <ul>
 <li>But I would advise that you stick to using a separate text file!</li>
 </ul>
 </div>
 <div id="setting-the-rng-seed" class="section level2">
 <h2>Setting the RNG seed</h2>
-<ul>
-<li>If we want to get numerically replicable results we need to add <code>.RNG.name</code> and <code>.RNG.seed</code> to the initial values, and an additional <code>#modules#</code> lecuyer hook to our basicjags.bug file:</li>
-</ul>
+<p>If we want to get numerically replicable results we need to add <code>.RNG.name</code> and <code>.RNG.seed</code> to the initial values, and an additional <code>#modules#</code> lecuyer hook to our basicjags.bug file:</p>
 <pre class="r"><code>model{
   Positives ~ dbinom(prevalence, TotalTests)
   prevalence ~ dbeta(2, 2)

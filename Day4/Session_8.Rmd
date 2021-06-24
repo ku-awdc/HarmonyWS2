@@ -51,6 +51,9 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
+
+# To collect temporary filenames:
+cleanup <- character(0)
 ```
 
 # Session 8:  Free practical time
@@ -81,3 +84,7 @@ We will be here until 12.30
 
 Thanks for participating!
 
+
+```{r include=FALSE}
+unlink(cleanup)
+```

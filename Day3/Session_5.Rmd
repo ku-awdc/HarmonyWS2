@@ -51,6 +51,9 @@ space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
 # Reduce space between chunks:
 space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
 knitr::knit_hooks$set(document = space_collapse)
+
+# To collect temporary filenames:
+cleanup <- character(0)
 ```
 
 # Session 5:  How to interpret the latent class
@@ -360,3 +363,7 @@ citation("runjags")
 - Think about the biology of where your data comes from, particularly if populations are fundamentally different
 
 - Follow the STARD checklist!
+
+```{r include=FALSE}
+unlink(cleanup)
+```
