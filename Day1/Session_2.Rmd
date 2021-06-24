@@ -8,7 +8,7 @@ theme: metropolis
 aspectratio: 43
 colortheme: seahorse
 header-includes: 
-  - \input{../preamble}
+  - \input{../rsc/preamble}
 params:
   presentation: TRUE
 output:
@@ -90,7 +90,7 @@ hw_definition <- c("model{
   sp[2] ~ dbeta(1, 1)
 
   #data# Tally, N
-  #monitor# prev, prob, se, sp
+  #monitor# prev, prob, se, sp, deviance
   #inits# prev, se, sp
 }
 ")
@@ -178,6 +178,11 @@ print(pt[["se[1].plot1"]])
 ```{r echo=FALSE}
 print(pt[["sp[1].plot1"]])
 ```
+
+- - -
+
+TODO:  add deviance plot
+
 - - -
 
 ```{r echo=FALSE}
@@ -326,577 +331,9 @@ Tally <- as.numeric(twoXtwo)
 
 1. What is the typical autocorrelation (and therefore effective sample size) of Hui-Walter models compared to the simpler models we were running earlier?  Is there any practical consequence of this?
 
-2. When will a model be identifiable and when might it not be?
+1. How does changing the prior distributions for the se and sp of one test affect the inference for the other test parameters?
 
-3. How does changing the prior distributions for the se and sp of one test affect the inference for the other test parameters?
-
-`r if(params$presentation) {"\\begin{comment}"}`
-
-## Exercise 1 {.fragile}
-
-Modify the code in the Hui Walter model to force tests to be no worse than useless
-
-Simulate data and recover parameters for:
-
-  * N=10
-  * N=100
-  * N=1000
-
-
-## Solution {.fragile}
-
-Model definition:
-
-```{r include=FALSE}
-hw_definition <- "model{
-  Tally ~ dmulti(prob, N)
-  
-  # Test1- Test2-
-	prob[1] <- (prev * ((1-se[1])*(1-se[2]))) + ((1-prev) * ((sp[1])*(sp[2])))
-
-  # Test1+ Test2-
-	prob[2] <- (prev * ((se[1])*(1-se[2]))) + ((1-prev) * ((1-sp[1])*(sp[2])))
-
-  # Test1- Test2+
-	prob[3] <- (prev * ((1-se[1])*(se[2]))) + ((1-prev) * ((sp[1])*(1-sp[2])))
-
-  # Test1+ Test2+
-	prob[4] <- (prev * ((se[1])*(se[2]))) + ((1-prev) * ((1-sp[1])*(1-sp[2])))
- 
-  prev ~ dbeta(1, 1)
-  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
-  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
-
-  #data# Tally, N, HPSe, HPSp
-  #monitor# prev, prob, se, sp
-  #inits# prev, se, sp
-}
-"
-cat(hw_definition, file='basic_hw.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(hw_definition, sep='\n')
-```
-
-Note that we specify the prior hyperparameters as data so we can change these from R without havíng to edit the model file (this is optional!)
-
-```{r}
-se1 <- 0.9
-sp1 <- 0.95
-se2 <- 0.8
-sp2 <- 0.99
-prevalence <- 0.5
-
-# Change N to be 10, 100 or 1000:
-N <- 100
-
-truestatus <- rbinom(N, 1, prevalence)
-Test1 <- rbinom(N, 1, (truestatus * se1) + ((1-truestatus) * (1-sp1)))
-Test2 <- rbinom(N, 1, (truestatus * se2) + ((1-truestatus) * (1-sp2)))
-
-twoXtwo <- table(Test1, Test2)
-twoXtwo
-
-library('runjags')
-
-Tally <- as.numeric(twoXtwo)
-N <- sum(Tally)
-HPSe <- matrix(c(1,1,1,1), nrow=2, ncol=2)
-HPSp <- matrix(c(1,1,1,1), nrow=2, ncol=2)
-
-prev <- list(chain1=0.05, chain2=0.95)
-se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
-sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
-
-results <- run.jags('basic_hw.bug', n.chains=2)
-results
-```
-
-How well do we recover our parameters?
-
-```{r}
-se1
-se2
-sp1
-sp2
-```
-
-Not that well!
-
-
-## Optional Exercise {.fragile}
-
-Compare results with the following priors for test 1:
-
-  * Sensitivity = 0.9 (95% CI: 0.85 - 0.95)
-  * Specificity = 0.95 (95%CI: 0.92-0.97)
-
-[These are the same as in session 1]
-
-
-## Optional Solution {.fragile}
-
-```{r}
-HPSe[1,] <- c(148.43, 16.49)
-HPSp[1,] <- c(240.03, 12.63)
-
-HPSe
-HPSp
-
-results <- run.jags('basic_hw.bug', n.chains=2)
-results
-```
-
-How well do we recover our parameters for test 2?
-
-```{r}
-se1
-se2
-sp1
-sp2
-```
-
-A bit better!  But note that the confidence interval for test 1 is not much narrower than that of the prior:
-
-```{r}
-# Sensitivity:
-qbeta(c(0.025, 0.5, 0.975), 148.43, 16.49)
-# Specificity:
-qbeta(c(0.025, 0.5, 0.975), 240.03, 12.63)
-```
-
-So we have not gained any additional information about test 1.
-
-```{r cleanup, include=FALSE}
-unlink('autohw.bug')
-unlink('basic_hw.bug')
-unlink('glm_hw.bug')
-```
-
-
-## Other runjags options {.fragile}
-
-There are a large number of other options to runjags.  Some highlights:
-
-  - The method can be parallel or background or bgparallel
-  - You can use extend.jags to continue running an existing model (e.g. to increase the sample size)
-  - You can use coda::as.mcmc.list to extract the underlying MCMC chains
-  - Use the summary() method to extract summary statistics
-    * See `?summary.runjags` and `?runjagsclass` for more information
-
-## Using embedded character strings {.fragile}
-
-- For simple models we might not want to bother with an external text file.  Then we can do:
-
-```{r results='hide', eval=FALSE}
-mt <- "
-model{
-  Positives ~ dbinom(prevalence, N)
-  prevalence ~ dbeta(2, 2)
-  
-  #data# Positives, N
-  #monitor# prevalence
-  #inits# prevalence
-}
-"
-
-results <- run.jags(mt, n.chains=2)
-```
-
-- But I would advise that you stick to using a separate text file!
-
-## Setting the RNG seed {.fragile}
-
-- If we want to get numerically replicable results we need to add `.RNG.name` and `.RNG.seed` to the initial values, and an additional `#modules#` lecuyer hook to our basicjags.bug file:
-
-```{r, eval=FALSE}
-model{
-  Positives ~ dbinom(prevalence, N)
-  prevalence ~ dbeta(2, 2)
-  
-  #data# Positives, N
-  #monitor# prevalence
-  #inits# prevalence, .RNG.name, .RNG.seed
-  #modules# lecuyer
-}
-```
-
-
-```{r, eval=FALSE}
-.RNG.name <- "lecuyer::RngStream"
-.RNG.seed <- list(chain1=1, chain2=2)
-results <- run.jags('basicjags.bug', n.chains=2)
-```
-
-- Every time this model is run the results will now be identical
-
-## A different prior {.fragile}
-
-- A quick way to see the distribution of a prior:
-
-```{r, fig.width=3, fig.height=3}
-curve(dbeta(x, 2, 2), from=0, to=1)
-```
-
----
-
-- A minimally informative prior might be:
-
-```{r, fig.width=3, fig.height=3}
-curve(dbeta(x, 1, 1), from=0, to=1)
-```
-
-- Let's change the prior we are using to `dbeta(1,1)`:
-
-```{r include=FALSE}
-mininf_definition <- "model{
-  Positives ~ dbinom(prevalence, N)
-  prevalence ~ dbeta(1, 1)
-  
-  # Hooks for automatic integration with R:
-  #data# Positives, N
-  #monitor# prevalence
-  #inits# prevalence
-}
-"
-cat(mininf_definition, file='basicjags.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(mininf_definition, sep='\n')
-```
-
-
-## An Equivalent Model {.fragile}
-
-- We could equivalently specify an observation-level model:
-
-```{r include=FALSE}
-loop_definition <- "model{
-  # Likelihood part:
-  for(i in 1:N){
-    Status[i] ~ dbern(prevalence)
-  }
-
-  # Prior part:
-  prevalence ~ dbeta(1, 1)
-  
-  # Hooks for automatic integration with R:
-  #data# Status, N
-  #monitor# prevalence
-  #inits# prevalence
-}
-"
-cat(loop_definition, file='basicloop.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(loop_definition, sep='\n')
-```
-
-- But we need the data in a different format:  a vector of 0/1 rather than total positives!
-
-```{r}
-Positives <- 70
-N <- 100
-Status <- c(rep(0, N-Positives), rep(1, Positives))
-```
-
-
-## A GLM Model {.fragile}
-
-```{r include=FALSE}
-glm_definition <- "model{
-  # Likelihood part:
-  for(i in 1:N){
-    Status[i] ~ dbern(predicted[i])
-    logit(predicted[i]) <- intercept
-  }
-
-  # Prior part:
-  intercept ~ dnorm(0, 10^-6)
-  
-  # Derived parameter:
-  prevalence <- ilogit(intercept)
-  
-  # Hooks for automatic integration with R:
-  #data# Status, N
-  #monitor# intercept, prevalence
-  #inits# intercept
-}
-"
-cat(glm_definition, file='basicglm.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(glm_definition, sep='\n')
-```
-
-
-- This is the start of a generalised linear model, where we could add covariates at individual animal level.
-
-- We introduce a new distribution `dnorm()` - notice this is mean and precision, not mean and sd!
-
-- For a complete list of the distributions available see:
-  * https://sourceforge.net/projects/mcmc-jags/files/Manuals/4.x/
-  * This document is also provided on the GitHub repository
-
-- However, notice that the prior is specified differently...
-
-
-## Exercise {.fragile}
-
-- Run the original version, the observation-level version, and the GLM version of the model and compare results with the same data
-
-- Now try a larger sample size:  e.g. 70 positives out of 100 tests - are the posteriors from the two models more or less similar than before?
-
-- Now try running the GLM model with a prior of `dnorm(0, 0.33)` (and the original data) - does this make a difference?
-
-
-
-
-## Solution {.fragile}
-
-In basicjags.bug:
-
-```{r comment='', echo=FALSE}
-cat(mininf_definition, sep='\n')
-```
-
-In basicloop.bug:
-
-```{r comment='', echo=FALSE}
-cat(loop_definition, sep='\n')
-```
-
-In basicglm.bug:
-
-```{r comment='', echo=FALSE}
-cat(glm_definition, sep='\n')
-```
-
-Comparison:
-
-```{r}
-# Data:
-Positives <- 7
-N <- 10
-
-# initial values for the basic and loop models:
-prevalence <- list(chain1=0.05, chain2=0.95)
-
-# initial values for the glm model:
-intercept <- list(chain1=-2, chain2=2)
-
-basicjags <- run.jags('basicjags.bug', n.chains=2)
-
-# Data for the loop and glm models:
-Status <- c(rep(0, N-Positives), rep(1, Positives))
-
-basicloop <- run.jags('basicloop.bug', n.chains=2)
-basicglm <- run.jags('basicglm.bug', n.chains=2)
-```
-
-Ensure convergence and sample size, then compare:
-
-```{r}
-basicjags
-basicloop
-basicglm
-```
-
-The GLM model has slightly different results, due to the prior.
-
-What about a larger dataset:
-
-
-```{r}
-# Data:
-Positives <- 70
-N <- 100
-Status <- c(rep(0, N-Positives), rep(1, Positives))
-
-basicjags <- run.jags('basicjags.bug', n.chains=2)
-basicloop <- run.jags('basicloop.bug', n.chains=2)
-basicglm <- run.jags('basicglm.bug', n.chains=2)
-```
-
-Ensure convergence and sample size, then compare:
-
-```{r}
-basicjags
-basicloop
-basicglm
-```
-
-The results are more similar, as the posterior is more dominated by the data.
-
-What about a different prior for the GLM model?  In basicglm2.bug:
-
-```{r include=FALSE}
-glm_definition <- "model{
-  # Likelihood part:
-  for(i in 1:N){
-    Status[i] ~ dbern(predicted[i])
-    logit(predicted[i]) <- intercept
-  }
-
-  # Prior part:
-  intercept ~ dnorm(0, 0.33)
-  
-  # Derived parameter:
-  prevalence <- ilogit(intercept)
-  
-  # Hooks for automatic integration with R:
-  #data# Status, N
-  #monitor# intercept, prevalence
-  #inits# intercept
-}
-"
-cat(glm_definition, file='basicglm2.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(glm_definition, sep='\n')
-```
-
-```{r}
-# Data:
-Positives <- 7
-N <- 10
-Status <- c(rep(0, Positives), rep(1, N-Positives))
-
-basicjags <- run.jags('basicjags.bug', n.chains=2)
-basicloop <- run.jags('basicloop.bug', n.chains=2)
-basicglm2 <- run.jags('basicglm2.bug', n.chains=2)
-```
-
-Ensure convergence and sample size, then compare:
-
-```{r}
-basicjags
-basicloop
-basicglm2
-```
-
-The GLM model is now more similar to the others, because the prior for prevalence is more similar.
-
-
-## Optional Exercise {.fragile}
-
-Another way of comparing different priors is to run different models with no data - as there is no influence of a likelihood, the posterior will then be identical to the priors (and the model will run faster).
-
-One way to do this is to make all of the response data (i.e. either Positives or Status) missing.  Try doing this for the following three models, and compare the priors for prevalence:
-
-  - The original model with prior `prevalence ~ dbeta(1,1)`
-  - The GLM model with prior `intercept ~ dnorm(0, 10^-6)`
-  - The GLM model with prior `intercept ~ dnorm(0, 0.33)`
-
-
-## Optional Solution {.fragile}
-
-This is the easiest way to remove data from the model without adjusting the model code itself:
-
-```{r}
-Positives <- NA
-Positives
-Status[] <- NA
-Status
-```
-
-Then we can run the models:
-
-```{r}
-basicjags <- run.jags('basicjags.bug', n.chains=2)
-basicloop <- run.jags('basicloop.bug', n.chains=2)
-basicglm <- run.jags('basicglm.bug', n.chains=2)
-basicglm2 <- run.jags('basicglm2.bug', n.chains=2)
-```
-
-No need to ensure convergence and sample size as we have no data!  Just compare the priors directly:
-
-```{r}
-basicjags
-basicloop
-basicglm
-basicglm2
-```
-
-You could also look at plots (particularly the histogram plot) if you wanted to.
-
-
-
-## Imperfect tests {.fragile}
-
-- Up to now we have ignored issues of diagnostic test sensitivity and specificity
-
-- Usually, however, we do not have a perfect test, so we do not know how many are truly positive or truly negative, rather than just testing positive or negative.
-
-- But we know that:
-$$Prev_{obs} = (Prev_{true}\times Se) + ((1-Prev_{true})\times (1-Sp))$$
-$$\implies Prev_{true} = \frac{Prev_{obs}-(1-Sp)}{Se-(1-Sp)}$$
-
-
-## Model Specification {.fragile}
-
-- We can incorporate the imperfect sensitivity and specicifity into our model:
-
-```{r include=FALSE}
-imperfect_definition <- "model{
-  Positives ~ dbinom(obsprev, N)
-  obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
-  
-  prevalence ~ dbeta(1, 1)
-  se ~ dbeta(1, 1)
-  sp ~ dbeta(1, 1)
-  
-  #data# Positives, N
-  #monitor# prevalence, obsprev, se, sp
-  #inits# prevalence, se, sp
-}
-"
-cat(imperfect_definition, file='basicimperfect.bug')
-```
-
-```{r comment='', echo=FALSE}
-cat(imperfect_definition, sep='\n')
-```
-
-
-- And run it:
-
-```{r}
-prevalence <- list(chain1=0.05, chain2=0.95)
-se <- list(chain1=0.5, chain2=0.99)
-sp <- list(chain1=0.5, chain2=0.99)
-Positives <- 70
-N <- 100
-results <- run.jags('basicimperfect.bug', n.chains=2)
-```
-
-[Remember to check convergence and effective sample size!]
-
-
-
-What do these results tell us?
-
-```{r echo=FALSE}
-res <- summary(results)[,c(1:3,9,11)]
-res[] <- round(res, 3)
-knitr::kable(res)
-```
-
-
-. . .
-
-  * We can estimate the observed prevalence quite well
-  * But not the prevalence, se or sp!
-    * The model is unidentifiable.
-
-## Priors {.fragile}
+## Priors
 
 - We cannot estimate `se`, `sp` and `prevalence` simultaneously
   
@@ -907,6 +344,8 @@ knitr::kable(res)
 ```{r}
 PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.8)
 ```
+
+---
 
 ```{r}
 qbeta(c(0.025, 0.5, 0.975), 41.82, 4.65)
@@ -926,6 +365,7 @@ curve(dbeta(x, 41.82, 4.65), from=0, to=1)
 - Modify the imperfect test model using these priors and re-estimate prevalence
 
 
+`r if(params$presentation) {"\\begin{comment}"}`
 
 ## Solution {.fragile}
 
@@ -951,14 +391,14 @@ Updated model:
 
 ```{r include=FALSE}
 imperfect_definition <- "model{
-  Positives ~ dbinom(obsprev, N)
+  Positives ~ dbinom(obsprev, TotalTests)
   obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
   
   prevalence ~ dbeta(1, 1)
   se ~ dbeta(148.43, 16.49)
   sp ~ dbeta(240.03, 12.63)
   
-  #data# Positives, N
+  #data# Positives, TotalTests
   #monitor# prevalence, obsprev, se, sp
   #inits# prevalence, se, sp
 }
@@ -977,13 +417,14 @@ prevalence <- list(chain1=0.05, chain2=0.95)
 se <- list(chain1=0.5, chain2=0.99)
 sp <- list(chain1=0.5, chain2=0.99)
 Positives <- 70
-N <- 100
+TotalTests <- 100
 results <- run.jags('basicimperfect.bug', n.chains=2, burnin=0, sample=10000)
 results
 ```
 
 This time we get sensible estimates for `prevalence`.
 
+`r if(params$presentation) {"\\end{comment}"}`
 
 ## Optional Exercise {.fragile}
 
@@ -996,6 +437,7 @@ This time we get sensible estimates for `prevalence`.
   * How does this affect estimates and CI for prevalence?
 
 
+`r if(params$presentation) {"\\begin{comment}"}`
 
 ## Optional Solution {.fragile}
 
@@ -1003,7 +445,7 @@ Same model with se and sp fixed to the mean estimates:
 
 ```{r include=FALSE}
 imperfect_definition <- "model{
-  Positives ~ dbinom(obsprev, N)
+  Positives ~ dbinom(obsprev, TotalTests)
   obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
   
   prevalence ~ dbeta(1, 1)
@@ -1012,7 +454,7 @@ imperfect_definition <- "model{
   sp <- 0.95
   # sp ~ dbeta(240.03, 12.63)
   
-  #data# Positives, N
+  #data# Positives, TotalTests
   #monitor# prevalence, obsprev, se, sp
   #inits# prevalence
 }
@@ -1037,7 +479,7 @@ Same model with se and sp fixed to one:
 
 ```{r include=FALSE}
 imperfect_definition <- "model{
-  Positives ~ dbinom(obsprev, N)
+  Positives ~ dbinom(obsprev, TotalTests)
   obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
   
   prevalence ~ dbeta(1, 1)
@@ -1046,7 +488,7 @@ imperfect_definition <- "model{
   sp <- 1
   # sp ~ dbeta(240.03, 12.63)
   
-  #data# Positives, N
+  #data# Positives, TotalTests
   #monitor# prevalence, obsprev, se, sp
   #inits# prevalence
 }
@@ -1069,18 +511,36 @@ Biased estimates for `prevalence`!
 
 `r if(params$presentation) {"\\end{comment}"}`
 
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Exercise plan TODO
+
+- Simulate data with different sample sizes and analyse it using:
+  - Model with minimally informative priors for everything
+  - Truncated minimally informative priors
+  - Informative priors for one test (give them median and 95% CI estimates)
+
+- Change the simulated prevalence
+  - Low prevalence = Sp can be estimated
+  - High prevalence = Se can be estimated
+
+Optional:
+
+- Explore prior - likelihood conflict
+  - Priors taken from manufacturer's numbers
+  - Real-world Se/Sp lower - observe bias in posterior
+
+`r if(params$presentation) {"\\end{comment}"}`
+
 
 ## Summary {.fragile}
 
-- Using JAGS / runjags allows us to work with MCMC more easily, safely and efficiently than writing our own sampling algorithms
-
-- But we must *never forget* to check convergence and effective sample size!
-
-- More complex models become easy to implement
-
-  * For example imperfect diagnostic tests
-
-- But just because a model can be defined does not mean that it will be useful for our data
-
-  * We need to be realistic about the information available in the data, what parameters are feasible to estimate, and where we will need to use strong priors
+- Hui-Walter models are like `pulling a rabbit out of a hat`, but:
+  - They typically exhibit high autocorrelation
+  - They may not converge immediately
+  - We need a larger sample for the same effective sample size
+  
+- More informative priors for one test will
+  - Improve identifiability of the model
+  - Impact the inference for all other parameters in the model!
 

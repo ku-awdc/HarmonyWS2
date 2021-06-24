@@ -8,7 +8,7 @@ theme: metropolis
 aspectratio: 43
 colortheme: seahorse
 header-includes: 
-  - \input{../preamble}
+  - \input{../rsc/preamble}
 params:
   presentation: TRUE
 output:
@@ -68,6 +68,17 @@ Teachers:
   - Nils Toft (IQinAbox)
   - Søren Saxmose Nielsen (University Of Copenhagen)
   - Maj Beldring Henningsen (University of Copenhagen)
+
+
+## Practical information
+
+All of the material is on the GitHub repository - remember to pull changes at least daily!
+
+Recordings of the sessions will be made available via our website
+  - Feel free to share these plus the teaching material with your colleagues
+  
+
+
 
 ## HARMONY
 
@@ -571,7 +582,14 @@ Key points:
 
 ## Exercise 3 {.fragile}
 
-Using JAGS allows us to add complexity to basic models, for example including a parameter for true prevalence that is related to observed prevalence by sensitivity and specificity parameters:
+Up to now we have ignored issues of diagnostic test sensitivity and specificity.  Usually, however, we do not have a perfect test, so we do not know how many are truly positive or truly negative, rather than just testing positive or negative.  But we know that:
+
+$$Prev_{obs} = (Prev_{true}\times Se) + ((1-Prev_{true})\times (1-Sp))$$
+$$\implies Prev_{true} = \frac{Prev_{obs}-(1-Sp)}{Se-(1-Sp)}$$
+
+[The second equation assumes that the observed prevalence and sensitivity are both higher than 1 minus the specificity!]
+
+Using JAGS allows us to add this additional complexity to our models by including a parameter for true prevalence that is related to observed prevalence by sensitivity and specificity parameters:
 
 ```{r include=FALSE}
 model_definition <- "model{
@@ -751,6 +769,8 @@ unlink('obsprevmodel.txt')
 ## Summary
 
 - MCMC allows flexibility in models BUT requires more computational resource and user awareness
+  * Convergence
+  * Effective sample size
 
 - Bayesian methods allow priors to be used BUT necessitate that priors are used
 

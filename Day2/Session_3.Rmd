@@ -1,0 +1,264 @@
+---
+title: Session 3
+subtitle: Multi-population Hui-Walter models
+date: "2021-06-29"
+author:
+  - Matt Denwood
+theme: metropolis
+aspectratio: 43
+colortheme: seahorse
+header-includes: 
+  - \input{../rsc/preamble}
+params:
+  presentation: TRUE
+output:
+  beamer_presentation:
+      pandoc_args: ["-t", "beamer"]
+      slide_level: 2
+  html_document: default
+---
+
+```{r rendering, eval=FALSE, include=FALSE}
+# To render this as PDF (beamer) slides run:
+rmarkdown::render('Session_3.Rmd', 'beamer_presentation', params=list(presentation=TRUE))
+# And for html:
+rmarkdown::render('Session_3.Rmd', 'html_document', params=list(presentation=FALSE))
+```
+
+```{r setup, include=FALSE}
+library("tidyverse")
+library("runjags")
+set.seed(2021-06-22)
+
+# Reduce the width of R code output for PDF only:
+if(params$presentation) options(width=60)
+knitr::opts_chunk$set(echo = TRUE)
+
+# Reduce font size of R code output for Beamer:
+if(params$presentation){
+  knitr::knit_hooks$set(size = function(before, options, envir) {
+    if(before){
+      knitr::asis_output(paste0("\\", options$size))
+    }else{
+      knitr::asis_output("\\normalsize")
+    }
+  })
+  knitr::opts_chunk$set(size = "scriptsize")
+}
+
+# Collapse successive chunks:
+space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
+# Reduce space between chunks:
+space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
+knitr::knit_hooks$set(document = space_collapse)
+```
+
+# Session 3:  Multi-population Hui-Walter models
+
+## Recap
+
+- Fitting models using MCMC is easy with JAGS / runjags
+
+- But we must **never forget** to check convergence and effective sample size!
+
+- More complex models become easy to implement
+
+  * For example imperfect diagnostic tests, and Hui-Walter models
+  * But remember to be realistic about what is possible with your data
+  * Also carefully consider the influence of your priors
+
+
+## Hui-Walter models with multiple populations
+
+- Basically an extension of the single-population model
+
+- Works best with multiple populations each with differing prevalences
+  * Including an unexposed population works well
+  * BUT be wary of assumptions regarding constant sensitivity/specificity across populations with very different types of infections
+
+
+## Independent intercepts for populations
+
+```{r eval=FALSE}
+model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+    # Test1- Test2- Pop1
+	  prob[1, p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    ## etc ##
+    prev[p] ~ dbeta(1, 1)
+  }
+
+  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
+  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
+
+  #data# Tally, TotalTests, Populations, HPSe, HPSp
+  #monitor# prev, prob, se, sp
+  #inits# prev, se, sp
+}
+```
+
+## Random intercepts for a larger number of populations
+
+```{r eval=FALSE}
+model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+    # Test1- Test2- Pop1
+	  prob[1, p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    ## etc ##
+    
+	  logit(prev[p]) <- intercept + population_effect[p]
+	  population_effect[p] ~ dnorm(0, tau)
+  }
+
+  tau ~ dgamma(0.01, 0.01)
+  intercept ~ dnorm(0, 0.33)
+  
+  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
+  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
+
+  #data# Tally, TotalTests, Populations, HPSe, HPSp
+  #monitor# prev, prob, se, sp
+  #inits# prev, se, sp
+}
+```
+
+## Multiple populations: assumptions
+
+- We typically assume that the sensitivity and specificity *must* be consistent between populations
+  * Do you have an endemic and epidemic population?  Or vaccinated and unvaccinated?
+  
+- It helps if the prevalence differs between the populations
+
+- The populations can be artificial (e.g. age groups) but must not be decided based on the diagnostic test results
+
+## Multiple populations: special cases
+
+- A small disease-free group is extremely helpful
+  * Contains strong data regarding specificity
+  * As long as specificity can be assumed to be the same in the other populations
+  
+- A small experimentally infected group MAY be helpful but it is sometimes difficult to assume that sensitivity is consistent
+  
+## Incorporating additional data
+
+*TODO* model formulation with special groups of known disease status
+(Or is it easier just to specify the prevalence as 0 or 1 in data??)
+
+
+## Other runjags options
+
+There are a large number of other options to runjags.  Some highlights:
+
+  - The method can be parallel or background or bgparallel
+  - You can use extend.jags to continue running an existing model (e.g. to increase the sample size)
+  - You can use coda::as.mcmc.list to extract the underlying MCMC chains
+  - Use the summary() method to extract summary statistics
+    * See `?summary.runjags` and `?runjagsclass` for more information
+
+## Using embedded character strings
+
+- For simple models we might not want to bother with an external text file.  Then we can do:
+
+```{r results='hide'}
+mt <- "
+model{
+  Positives ~ dbinom(prevalence, TotalTests)
+  prevalence ~ dbeta(2, 2)
+  
+  #data# Positives, TotalTests
+  #monitor# prevalence
+  #inits# prevalence
+}
+"
+Positives <- 7
+TotalTests <- 10
+prevalence <- list(chain1=0.01, chain2=0.99)
+results <- run.jags(mt, n.chains=2)
+```
+
+- But I would advise that you stick to using a separate text file!
+
+## Setting the RNG seed
+
+- If we want to get numerically replicable results we need to add `.RNG.name` and `.RNG.seed` to the initial values, and an additional `#modules#` lecuyer hook to our basicjags.bug file:
+
+```{r, eval=FALSE}
+model{
+  Positives ~ dbinom(prevalence, TotalTests)
+  prevalence ~ dbeta(2, 2)
+  
+  #data# Positives, TotalTests
+  #monitor# prevalence
+  #inits# prevalence, .RNG.name, .RNG.seed
+  #modules# lecuyer
+}
+```
+
+
+```{r, eval=FALSE}
+.RNG.name <- "lecuyer::RngStream"
+.RNG.seed <- list(chain1=1, chain2=2)
+results <- run.jags('basicjags.bug', n.chains=2)
+```
+
+- Every time this model is run the results will now be identical
+
+
+# Practical session 3
+
+## Points to consider {.fragile}
+
+1. What are the benefits of including multiple populations?
+
+1. How can we define/obtain these populations?
+
+1. What happens if our fundamental assumptions about consistent Se/Sp are broken?
+
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Exercise plan TODO
+
+- Simulate data with different numbers of populations
+  - 1 vs 2 vs 3 vs 5 vs 10 populations
+  - Widely varying vs very similar prevalence
+  - See how it impacts the width of the CI for Se/Sp
+
+- Give them a single group dataset with covariates of age and sex, where prevalence depends on age
+  - Let them work out that they can use different age groups to define populations
+  - Show them what happens if they use one of the test results to define populations
+
+- Give them another dataset including:
+  - Experimentally infected group where the Se is higher in that group
+  - Known free group with consistent Sp
+  - One larger group with unknown status
+  - Posterior will change if including/excluding the experimentally infected group
+
+Optional:
+
+- Use fixed vs random effects of population prevalence
+  - For populations with small/varying population size
+  - For large populations
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+
+## Summary {.fragile}
+
+- Multiple populations helps to estimate Se and Sp
+  - Particularly if the prevalences differ
+  - A large number of populations with small N may be better as a random effect
+  
+- Populations may be artificial
+  - But cannot be based on the result of either test
+
+- But if Se / Sp are inconsistent then we will get misleading results
+  - In practice, groups with widely varying prevalence rarely have consistent Se / Sp
+  - It is possible to allow Se / Sp to differ between populations, but then there is no benefit of combining the data
+  

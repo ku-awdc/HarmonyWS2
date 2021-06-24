@@ -1,0 +1,139 @@
+---
+title: Session 6
+subtitle: Coping with missing data
+date: "2021-06-30"
+author:
+  - Matt Denwood
+theme: metropolis
+aspectratio: 43
+colortheme: seahorse
+header-includes: 
+  - \input{../rsc/preamble}
+params:
+  presentation: TRUE
+output:
+  beamer_presentation:
+      pandoc_args: ["-t", "beamer"]
+      slide_level: 2
+  html_document: default
+---
+
+```{r rendering, eval=FALSE, include=FALSE}
+# To render this as PDF (beamer) slides run:
+rmarkdown::render('Session_6.Rmd', 'beamer_presentation', params=list(presentation=TRUE))
+# And for html:
+rmarkdown::render('Session_6.Rmd', 'html_document', params=list(presentation=FALSE))
+```
+
+```{r setup, include=FALSE}
+library("tidyverse")
+library("runjags")
+set.seed(2021-06-22)
+
+# Reduce the width of R code output for PDF only:
+if(params$presentation) options(width=60)
+knitr::opts_chunk$set(echo = TRUE)
+
+# Reduce font size of R code output for Beamer:
+if(params$presentation){
+  knitr::knit_hooks$set(size = function(before, options, envir) {
+    if(before){
+      knitr::asis_output(paste0("\\", options$size))
+    }else{
+      knitr::asis_output("\\normalsize")
+    }
+  })
+  knitr::opts_chunk$set(size = "scriptsize")
+}
+
+# Collapse successive chunks:
+space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
+# Reduce space between chunks:
+space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
+knitr::knit_hooks$set(document = space_collapse)
+```
+
+# Session 6:  Coping with missing data
+
+## Outline
+
+- When tests are missing at random -> easy (template_huiwalter)
+
+- When tests are missing structurally -> does the test missingness correspond with expected prevalence?
+
+- Removing data for cross-validation purposes
+
+## Types of missingness
+
+- MCAR:  Missing completely at random
+  - There is absolutely no pattern to the missingness eg:
+    - The animal was too aggressive to facilitate a blood sample
+    - Somebody dropped the samples on the way to the PCR machine
+  - This is the best kind
+  
+. . .
+
+- MAR:  Missing at random
+  - There is a pattern to the missingness but we can explain it eg:
+    - Test A was not done in population 1 because of financial limitations
+    - Test B was only done if Test A was positive
+  - We need to either include the explanation in the model, or ensure that it is not confounded with expected disease status
+  
+. . .
+
+- MNAR:  Missing not at random
+  - There is an unknown (or unrecorded) pattern to the missingness eg:
+    - Test B was only done if the animal had diahorrea
+    - The individual patient was given a choice if they wanted Test B after knowing the result of Test A
+  - This is a bad situation because the prevalence may be confounded with missingness
+
+
+
+
+# Practical session 6
+
+## Points to consider {.fragile}
+
+1. How does missing-at-random data impact your results?
+
+1. What about if you have data using confirmatory tests?
+
+1. How can we use cross-validation as a method of checking assumptions?
+
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Exercise plan TODO
+
+- Simulate data with 3 tests and remove 10%, 25%, 50% of the test results at random
+  - Use template_autohuiwalter
+  - Also do the same but this time remove 1 test from 1 population
+  - Posterior variance increases but no strong bias
+  
+- Simulate data with 2 tests but only keep the 2nd test when the 1st is positive
+  - We now have no data on the Sp of the 2nd test
+  - Strong priors for 1st test Se and Sp are also required
+
+- Simulate data from multiple populations where
+  - They have consistent Se/Sp
+  - One has different Se/Sp
+  - Use cross-validation (remove Tally for 1 pop at a time) to assess
+  
+Optional:
+
+- Simulate a more complex 2-test dataset where the second test is taken conditional on an unknown motivation of the individual following a first test result
+  - Use Covid example of optional PCR following antigen test, where different groups have different motivations, but the motivation is not known
+  - Assuming it is missing at random gives misleading results
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+
+## Summary {.fragile}
+
+- Observations that are MCAR are trivial to deal with using JAGS
+
+- We can also treat MAR observations as if they are MCAR as long as the reason for missingness does not confound with expected prevalence, or we allow prevalence to differ between groups where the structural missingness differs
+
+- MNAR is bad news
+
+- Deliberately making observations missing is a good way to assess model assumptions

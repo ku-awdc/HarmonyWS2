@@ -1,0 +1,1679 @@
+---
+title: Session 2
+subtitle: Basic Hui-Walter models
+date: "2021-06-28"
+author:
+  - Matt Denwood
+theme: metropolis
+aspectratio: 43
+colortheme: seahorse
+header-includes: 
+  - \input{../preamble}
+params:
+  presentation: TRUE
+output:
+  beamer_presentation:
+      pandoc_args: ["-t", "beamer"]
+      slide_level: 2
+  html_document: default
+---
+
+```{r rendering, eval=FALSE, include=FALSE}
+# To render this as PDF (beamer) slides run:
+rmarkdown::render('Session_2.Rmd', 'beamer_presentation', params=list(presentation=TRUE))
+# And for html:
+rmarkdown::render('Session_2.Rmd', 'html_document', params=list(presentation=FALSE))
+```
+
+```{r setup, include=FALSE}
+library("tidyverse")
+set.seed(2021-06-22)
+
+# Reduce the width of R code output for PDF only:
+if(params$presentation) options(width=60)
+knitr::opts_chunk$set(echo = TRUE)
+
+# Reduce font size of R code output for Beamer:
+if(params$presentation){
+  knitr::knit_hooks$set(size = function(before, options, envir) {
+    if(before){
+      knitr::asis_output(paste0("\\", options$size))
+    }else{
+      knitr::asis_output("\\normalsize")
+    }
+  })
+  knitr::opts_chunk$set(size = "scriptsize")
+}
+
+# Collapse successive chunks:
+space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
+# Reduce space between chunks:
+space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
+knitr::knit_hooks$set(document = space_collapse)
+```
+
+# Session 2:  Basic Hui-Walter models
+
+## Hui-Walter Model
+
+- A particular model formulation that was originally designed for evaluating diagnostic tests in the absence of a gold standard
+
+- Not necessarily (or originally) Bayesian but often implemented using Bayesian MCMC
+  
+- But evaluating an imperfect test against another imperfect test is a bit like pulling a rabbit out of a hat
+  * If we don't know the true disease status, how can we estimate sensitivity or specificity for either test?
+
+
+## Model Specification
+
+
+```{r include=FALSE}
+hw_definition <- c("model{
+  Tally ~ dmulti(prob, N)
+  
+  # Test1- Test2-
+	prob[1] <- (prev * ((1-se[1])*(1-se[2]))) + ((1-prev) * ((sp[1])*(sp[2])))
+
+  # Test1+ Test2-
+	prob[2] <- (prev * ((se[1])*(1-se[2]))) + ((1-prev) * ((1-sp[1])*(sp[2])))
+
+  # Test1- Test2+
+	prob[3] <- (prev * ((1-se[1])*(se[2]))) + ((1-prev) * ((sp[1])*(1-sp[2])))
+", " 
+  # Test1+ Test2+
+	prob[4] <- (prev * ((se[1])*(se[2]))) + ((1-prev) * ((1-sp[1])*(1-sp[2])))
+
+  prev ~ dbeta(1, 1)
+  se[1] ~ dbeta(1, 1)
+  sp[1] ~ dbeta(1, 1)
+  se[2] ~ dbeta(1, 1)
+  sp[2] ~ dbeta(1, 1)
+
+  #data# Tally, N
+  #monitor# prev, prob, se, sp
+  #inits# prev, se, sp
+}
+")
+cat(hw_definition, sep='', file='basic_hw.bug')
+```
+
+
+```{r comment='', echo=FALSE}
+cat(hw_definition[1], sep='\n')
+```
+
+---
+
+```{r comment='', echo=FALSE}
+cat(hw_definition[2], sep='\n')
+```
+
+---
+
+```{r}
+twoXtwo <- matrix(c(48, 12, 4, 36), ncol=2, nrow=2)
+twoXtwo
+```
+
+
+```{r, message=FALSE, warning=FALSE, results='hide'}
+library('runjags')
+
+Tally <- as.numeric(twoXtwo)
+N <- sum(Tally)
+
+prev <- list(chain1=0.05, chain2=0.95)
+se <- list(chain1=c(0.01,0.99), chain2=c(0.99,0.01))
+sp <- list(chain1=c(0.01,0.99), chain2=c(0.99,0.01))
+
+results <- run.jags('basic_hw.bug', n.chains=2)
+```
+
+[Remember to check convergence and effective sample size!]
+
+---
+
+```{r, eval=FALSE}
+results
+```
+
+```{r echo=FALSE, results="hide"}
+inits1 <- list(.RNG.name="base::Super-Duper", .RNG.seed=8)
+inits2 <- list(.RNG.name="base::Wichmann-Hill", .RNG.seed=9)
+
+results <- run.jags('basic_hw.bug', n.chains=2, inits=list(inits1,inits2), silent.jags=TRUE)
+results
+
+pt <- plot(results)
+```
+
+```{r echo=FALSE}
+res <- summary(results)[,c(1:3,9,11)]
+res[] <- round(res, 3)
+knitr::kable(res)
+```
+
+- Does anybody spot a problem?
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["prob[1].plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["prev.plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["se[1].plot1"]])
+```
+
+- - -
+
+```{r echo=FALSE}
+print(pt[["sp[1].plot1"]])
+```
+- - -
+
+```{r echo=FALSE}
+print(pt[["crosscorr"]])
+```
+
+## Label Switching
+
+How to interpret a test with Se=0% and Sp=0%?
+
+. . .
+
+  * The test is perfect - we are just holding it upside down...
+
+. . .
+
+We can force se+sp >= 1:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(1, 1)
+  sp[1] ~ dbeta(1, 1)T(1-se[1], )
+```
+
+Or:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  sp[1] ~ dbeta(1, 1)
+```
+
+This allows the test to be useless, but not worse than useless.
+
+Note: the joint posterior is not necessarily what you would expect
+
+*TODO* show model without data
+
+Alternative: rejection step (ability to be added to JAGS/runjags at some point)
+
+
+- - -
+
+Alternatively we can have the weakly informative priors:
+
+```{r eval=FALSE}
+  se[1] ~ dbeta(2, 1)
+  sp[1] ~ dbeta(2, 1)
+```
+
+To give the model some information that we expect the test characteristics to be closer to 100% than 0%.
+
+Or we can use stronger priors for one or both tests.
+
+*TODO*: show results with truncated priors
+
+## Practicalities
+
+- Be **very** vareful with the order of combinations in dmultinom!
+
+- Check your results carefully to ensure they make sense!
+
+- Convergence is more problematic than usual
+
+- These models need A LOT of data, and/or strong priors for one of the tests
+
+
+## Priors
+
+## A different prior
+
+- A quick way to see the distribution of a prior:
+
+```{r, fig.width=3, fig.height=3}
+curve(dbeta(x, 1, 1), from=0, to=1)
+qbeta(c(0.025,0.975), shape1=1, shape2=1)
+```
+
+---
+
+- This was minimally informative, but how does that compare to a weakly informative prior for e.g. sensitivity?
+
+```{r, fig.width=3, fig.height=3}
+curve(dbeta(x, 2, 1), from=0, to=1)
+qbeta(c(0.025,0.975), shape1=2, shape2=1)
+```
+
+- Or more accurately:
+
+```{r}
+library("TeachingDemos")
+hpd(qbeta, shape1=2, shape2=1)
+```
+
+---
+
+- What about a more informative prior?
+
+```{r, fig.width=3, fig.height=3}
+curve(dbeta(x, 20, 2), from=0, to=1)
+hpd(qbeta, shape1=20, shape2=2)
+```
+
+## Choosing a prior
+
+- Typically we are given median and 95% confidence intervals from a paper, e.g.:
+
+"The median (95% CI) estimates of the sensitivity and specificity of the shiny new test were 94% (92-96%) and 99% (97-100%) respectively"
+
+- How can we generate a prior from this?
+
+## The PriorGen package
+
+"The median (95% CI) estimates of the sensitivity and specificity of the shiny new test were 94% (92-96%) and 99% (97-100%) respectively"
+
+```{r}
+library("PriorGen")
+findbeta(themedian = 0.94, percentile=0.95, percentile.value = 0.92)
+```
+```{r}
+curve(dbeta(x, shape1=429.95, shape2=27.76))
+hpd(qbeta, shape1=429.95, shape2=27.76)
+```
+
+
+## Analysing simulated data
+
+This is useful to check that we can recover parameter values!
+
+```{r}
+se <- c(0.9, 0.6)
+sp <- c(0.95, 0.9)
+N <- 1000
+prevalence <- 0.25
+
+data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
+  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+
+twoXtwo <- with(data, table(Test1, Test2))
+Tally <- as.numeric(twoXtwo)
+```
+
+
+# Practical Session 2
+
+## Points to consider {.fragile}
+
+1. What is the typical autocorrelation (and therefore effective sample size) of Hui-Walter models compared to the simpler models we were running earlier?  Is there any practical consequence of this?
+
+2. When will a model be identifiable and when might it not be?
+
+3. How does changing the prior distributions for the se and sp of one test affect the inference for the other test parameters?
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Exercise 1 {.fragile}
+
+Modify the code in the Hui Walter model to force tests to be no worse than useless
+
+Simulate data and recover parameters for:
+
+  * N=10
+  * N=100
+  * N=1000
+
+
+## Solution {.fragile}
+
+Model definition:
+
+```{r include=FALSE}
+hw_definition <- "model{
+  Tally ~ dmulti(prob, N)
+  
+  # Test1- Test2-
+	prob[1] <- (prev * ((1-se[1])*(1-se[2]))) + ((1-prev) * ((sp[1])*(sp[2])))
+
+  # Test1+ Test2-
+	prob[2] <- (prev * ((se[1])*(1-se[2]))) + ((1-prev) * ((1-sp[1])*(sp[2])))
+
+  # Test1- Test2+
+	prob[3] <- (prev * ((1-se[1])*(se[2]))) + ((1-prev) * ((sp[1])*(1-sp[2])))
+
+  # Test1+ Test2+
+	prob[4] <- (prev * ((se[1])*(se[2]))) + ((1-prev) * ((1-sp[1])*(1-sp[2])))
+ 
+  prev ~ dbeta(1, 1)
+  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
+  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
+
+  #data# Tally, N, HPSe, HPSp
+  #monitor# prev, prob, se, sp
+  #inits# prev, se, sp
+}
+"
+cat(hw_definition, file='basic_hw.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(hw_definition, sep='\n')
+```
+
+Note that we specify the prior hyperparameters as data so we can change these from R without havíng to edit the model file (this is optional!)
+
+```{r}
+se1 <- 0.9
+sp1 <- 0.95
+se2 <- 0.8
+sp2 <- 0.99
+prevalence <- 0.5
+
+# Change N to be 10, 100 or 1000:
+N <- 100
+
+truestatus <- rbinom(N, 1, prevalence)
+Test1 <- rbinom(N, 1, (truestatus * se1) + ((1-truestatus) * (1-sp1)))
+Test2 <- rbinom(N, 1, (truestatus * se2) + ((1-truestatus) * (1-sp2)))
+
+twoXtwo <- table(Test1, Test2)
+twoXtwo
+
+library('runjags')
+
+Tally <- as.numeric(twoXtwo)
+N <- sum(Tally)
+HPSe <- matrix(c(1,1,1,1), nrow=2, ncol=2)
+HPSp <- matrix(c(1,1,1,1), nrow=2, ncol=2)
+
+prev <- list(chain1=0.05, chain2=0.95)
+se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+
+results <- run.jags('basic_hw.bug', n.chains=2)
+results
+```
+
+How well do we recover our parameters?
+
+```{r}
+se1
+se2
+sp1
+sp2
+```
+
+Not that well!
+
+
+## Optional Exercise {.fragile}
+
+Compare results with the following priors for test 1:
+
+  * Sensitivity = 0.9 (95% CI: 0.85 - 0.95)
+  * Specificity = 0.95 (95%CI: 0.92-0.97)
+
+[These are the same as in session 1]
+
+
+## Optional Solution {.fragile}
+
+```{r}
+HPSe[1,] <- c(148.43, 16.49)
+HPSp[1,] <- c(240.03, 12.63)
+
+HPSe
+HPSp
+
+results <- run.jags('basic_hw.bug', n.chains=2)
+results
+```
+
+How well do we recover our parameters for test 2?
+
+```{r}
+se1
+se2
+sp1
+sp2
+```
+
+A bit better!  But note that the confidence interval for test 1 is not much narrower than that of the prior:
+
+```{r}
+# Sensitivity:
+qbeta(c(0.025, 0.5, 0.975), 148.43, 16.49)
+# Specificity:
+qbeta(c(0.025, 0.5, 0.975), 240.03, 12.63)
+```
+
+So we have not gained any additional information about test 1.
+
+```{r cleanup, include=FALSE}
+unlink('autohw.bug')
+unlink('basic_hw.bug')
+unlink('glm_hw.bug')
+```
+
+
+## Other runjags options {.fragile}
+
+There are a large number of other options to runjags.  Some highlights:
+
+  - The method can be parallel or background or bgparallel
+  - You can use extend.jags to continue running an existing model (e.g. to increase the sample size)
+  - You can use coda::as.mcmc.list to extract the underlying MCMC chains
+  - Use the summary() method to extract summary statistics
+    * See `?summary.runjags` and `?runjagsclass` for more information
+
+## Using embedded character strings {.fragile}
+
+- For simple models we might not want to bother with an external text file.  Then we can do:
+
+```{r results='hide', eval=FALSE}
+mt <- "
+model{
+  Positives ~ dbinom(prevalence, N)
+  prevalence ~ dbeta(2, 2)
+  
+  #data# Positives, N
+  #monitor# prevalence
+  #inits# prevalence
+}
+"
+
+results <- run.jags(mt, n.chains=2)
+```
+
+- But I would advise that you stick to using a separate text file!
+
+## Setting the RNG seed {.fragile}
+
+- If we want to get numerically replicable results we need to add `.RNG.name` and `.RNG.seed` to the initial values, and an additional `#modules#` lecuyer hook to our basicjags.bug file:
+
+```{r, eval=FALSE}
+model{
+  Positives ~ dbinom(prevalence, N)
+  prevalence ~ dbeta(2, 2)
+  
+  #data# Positives, N
+  #monitor# prevalence
+  #inits# prevalence, .RNG.name, .RNG.seed
+  #modules# lecuyer
+}
+```
+
+
+```{r, eval=FALSE}
+.RNG.name <- "lecuyer::RngStream"
+.RNG.seed <- list(chain1=1, chain2=2)
+results <- run.jags('basicjags.bug', n.chains=2)
+```
+
+- Every time this model is run the results will now be identical
+
+## A different prior {.fragile}
+
+- A quick way to see the distribution of a prior:
+
+```{r, fig.width=3, fig.height=3}
+curve(dbeta(x, 2, 2), from=0, to=1)
+```
+
+---
+
+- A minimally informative prior might be:
+
+```{r, fig.width=3, fig.height=3}
+curve(dbeta(x, 1, 1), from=0, to=1)
+```
+
+- Let's change the prior we are using to `dbeta(1,1)`:
+
+```{r include=FALSE}
+mininf_definition <- "model{
+  Positives ~ dbinom(prevalence, N)
+  prevalence ~ dbeta(1, 1)
+  
+  # Hooks for automatic integration with R:
+  #data# Positives, N
+  #monitor# prevalence
+  #inits# prevalence
+}
+"
+cat(mininf_definition, file='basicjags.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(mininf_definition, sep='\n')
+```
+
+
+## An Equivalent Model {.fragile}
+
+- We could equivalently specify an observation-level model:
+
+```{r include=FALSE}
+loop_definition <- "model{
+  # Likelihood part:
+  for(i in 1:N){
+    Status[i] ~ dbern(prevalence)
+  }
+
+  # Prior part:
+  prevalence ~ dbeta(1, 1)
+  
+  # Hooks for automatic integration with R:
+  #data# Status, N
+  #monitor# prevalence
+  #inits# prevalence
+}
+"
+cat(loop_definition, file='basicloop.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(loop_definition, sep='\n')
+```
+
+- But we need the data in a different format:  a vector of 0/1 rather than total positives!
+
+```{r}
+Positives <- 70
+N <- 100
+Status <- c(rep(0, N-Positives), rep(1, Positives))
+```
+
+
+## A GLM Model {.fragile}
+
+```{r include=FALSE}
+glm_definition <- "model{
+  # Likelihood part:
+  for(i in 1:N){
+    Status[i] ~ dbern(predicted[i])
+    logit(predicted[i]) <- intercept
+  }
+
+  # Prior part:
+  intercept ~ dnorm(0, 10^-6)
+  
+  # Derived parameter:
+  prevalence <- ilogit(intercept)
+  
+  # Hooks for automatic integration with R:
+  #data# Status, N
+  #monitor# intercept, prevalence
+  #inits# intercept
+}
+"
+cat(glm_definition, file='basicglm.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(glm_definition, sep='\n')
+```
+
+
+- This is the start of a generalised linear model, where we could add covariates at individual animal level.
+
+- We introduce a new distribution `dnorm()` - notice this is mean and precision, not mean and sd!
+
+- For a complete list of the distributions available see:
+  * https://sourceforge.net/projects/mcmc-jags/files/Manuals/4.x/
+  * This document is also provided on the GitHub repository
+
+- However, notice that the prior is specified differently...
+
+
+## Exercise {.fragile}
+
+- Run the original version, the observation-level version, and the GLM version of the model and compare results with the same data
+
+- Now try a larger sample size:  e.g. 70 positives out of 100 tests - are the posteriors from the two models more or less similar than before?
+
+- Now try running the GLM model with a prior of `dnorm(0, 0.33)` (and the original data) - does this make a difference?
+
+
+
+
+## Solution {.fragile}
+
+In basicjags.bug:
+
+```{r comment='', echo=FALSE}
+cat(mininf_definition, sep='\n')
+```
+
+In basicloop.bug:
+
+```{r comment='', echo=FALSE}
+cat(loop_definition, sep='\n')
+```
+
+In basicglm.bug:
+
+```{r comment='', echo=FALSE}
+cat(glm_definition, sep='\n')
+```
+
+Comparison:
+
+```{r}
+# Data:
+Positives <- 7
+N <- 10
+
+# initial values for the basic and loop models:
+prevalence <- list(chain1=0.05, chain2=0.95)
+
+# initial values for the glm model:
+intercept <- list(chain1=-2, chain2=2)
+
+basicjags <- run.jags('basicjags.bug', n.chains=2)
+
+# Data for the loop and glm models:
+Status <- c(rep(0, N-Positives), rep(1, Positives))
+
+basicloop <- run.jags('basicloop.bug', n.chains=2)
+basicglm <- run.jags('basicglm.bug', n.chains=2)
+```
+
+Ensure convergence and sample size, then compare:
+
+```{r}
+basicjags
+basicloop
+basicglm
+```
+
+The GLM model has slightly different results, due to the prior.
+
+What about a larger dataset:
+
+
+```{r}
+# Data:
+Positives <- 70
+N <- 100
+Status <- c(rep(0, N-Positives), rep(1, Positives))
+
+basicjags <- run.jags('basicjags.bug', n.chains=2)
+basicloop <- run.jags('basicloop.bug', n.chains=2)
+basicglm <- run.jags('basicglm.bug', n.chains=2)
+```
+
+Ensure convergence and sample size, then compare:
+
+```{r}
+basicjags
+basicloop
+basicglm
+```
+
+The results are more similar, as the posterior is more dominated by the data.
+
+What about a different prior for the GLM model?  In basicglm2.bug:
+
+```{r include=FALSE}
+glm_definition <- "model{
+  # Likelihood part:
+  for(i in 1:N){
+    Status[i] ~ dbern(predicted[i])
+    logit(predicted[i]) <- intercept
+  }
+
+  # Prior part:
+  intercept ~ dnorm(0, 0.33)
+  
+  # Derived parameter:
+  prevalence <- ilogit(intercept)
+  
+  # Hooks for automatic integration with R:
+  #data# Status, N
+  #monitor# intercept, prevalence
+  #inits# intercept
+}
+"
+cat(glm_definition, file='basicglm2.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(glm_definition, sep='\n')
+```
+
+```{r}
+# Data:
+Positives <- 7
+N <- 10
+Status <- c(rep(0, Positives), rep(1, N-Positives))
+
+basicjags <- run.jags('basicjags.bug', n.chains=2)
+basicloop <- run.jags('basicloop.bug', n.chains=2)
+basicglm2 <- run.jags('basicglm2.bug', n.chains=2)
+```
+
+Ensure convergence and sample size, then compare:
+
+```{r}
+basicjags
+basicloop
+basicglm2
+```
+
+The GLM model is now more similar to the others, because the prior for prevalence is more similar.
+
+
+## Optional Exercise {.fragile}
+
+Another way of comparing different priors is to run different models with no data - as there is no influence of a likelihood, the posterior will then be identical to the priors (and the model will run faster).
+
+One way to do this is to make all of the response data (i.e. either Positives or Status) missing.  Try doing this for the following three models, and compare the priors for prevalence:
+
+  - The original model with prior `prevalence ~ dbeta(1,1)`
+  - The GLM model with prior `intercept ~ dnorm(0, 10^-6)`
+  - The GLM model with prior `intercept ~ dnorm(0, 0.33)`
+
+
+## Optional Solution {.fragile}
+
+This is the easiest way to remove data from the model without adjusting the model code itself:
+
+```{r}
+Positives <- NA
+Positives
+Status[] <- NA
+Status
+```
+
+Then we can run the models:
+
+```{r}
+basicjags <- run.jags('basicjags.bug', n.chains=2)
+basicloop <- run.jags('basicloop.bug', n.chains=2)
+basicglm <- run.jags('basicglm.bug', n.chains=2)
+basicglm2 <- run.jags('basicglm2.bug', n.chains=2)
+```
+
+No need to ensure convergence and sample size as we have no data!  Just compare the priors directly:
+
+```{r}
+basicjags
+basicloop
+basicglm
+basicglm2
+```
+
+You could also look at plots (particularly the histogram plot) if you wanted to.
+
+
+
+## Imperfect tests {.fragile}
+
+- Up to now we have ignored issues of diagnostic test sensitivity and specificity
+
+- Usually, however, we do not have a perfect test, so we do not know how many are truly positive or truly negative, rather than just testing positive or negative.
+
+- But we know that:
+$$Prev_{obs} = (Prev_{true}\times Se) + ((1-Prev_{true})\times (1-Sp))$$
+$$\implies Prev_{true} = \frac{Prev_{obs}-(1-Sp)}{Se-(1-Sp)}$$
+
+
+## Model Specification {.fragile}
+
+- We can incorporate the imperfect sensitivity and specicifity into our model:
+
+```{r include=FALSE}
+imperfect_definition <- "model{
+  Positives ~ dbinom(obsprev, N)
+  obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
+  
+  prevalence ~ dbeta(1, 1)
+  se ~ dbeta(1, 1)
+  sp ~ dbeta(1, 1)
+  
+  #data# Positives, N
+  #monitor# prevalence, obsprev, se, sp
+  #inits# prevalence, se, sp
+}
+"
+cat(imperfect_definition, file='basicimperfect.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(imperfect_definition, sep='\n')
+```
+
+
+- And run it:
+
+```{r}
+prevalence <- list(chain1=0.05, chain2=0.95)
+se <- list(chain1=0.5, chain2=0.99)
+sp <- list(chain1=0.5, chain2=0.99)
+Positives <- 70
+N <- 100
+results <- run.jags('basicimperfect.bug', n.chains=2)
+```
+
+[Remember to check convergence and effective sample size!]
+
+
+
+What do these results tell us?
+
+```{r echo=FALSE}
+res <- summary(results)[,c(1:3,9,11)]
+res[] <- round(res, 3)
+knitr::kable(res)
+```
+
+
+. . .
+
+  * We can estimate the observed prevalence quite well
+  * But not the prevalence, se or sp!
+    * The model is unidentifiable.
+
+## Priors {.fragile}
+
+- We cannot estimate `se`, `sp` and `prevalence` simultaneously
+  
+  * We need strong priors for se and sp
+
+- We can use the PriorGen package to generate Beta priors based on published results, for example:
+
+```{r}
+PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.8)
+```
+
+```{r}
+qbeta(c(0.025, 0.5, 0.975), 41.82, 4.65)
+curve(dbeta(x, 41.82, 4.65), from=0, to=1)
+```
+
+
+## Exercise {.fragile}
+
+- Find beta distribution priors for:
+
+  * Sensitivity = 0.9 (95% CI: 0.85 - 0.95)
+  * Specificity = 0.95 (95%CI: 0.92-0.97)
+
+- Look at these distributions using curve and qbeta
+
+- Modify the imperfect test model using these priors and re-estimate prevalence
+
+
+
+## Solution {.fragile}
+
+Parameters for Sensitivity = 0.9 (95% CI: 0.85 - 0.95):
+
+
+```{r}
+PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.85)
+qbeta(c(0.025, 0.5, 0.975), 148.43, 16.49)
+curve(dbeta(x, 148.43, 16.49), from=0, to=1)
+```
+
+Parameters for Specificity = 0.95 (95%CI: 0.92-0.97):
+
+```{r}
+PriorGen::findbeta(themean=0.95, percentile = 0.975, percentile.value = 0.92)
+qbeta(c(0.025, 0.5, 0.975), 240.03, 12.63)
+curve(dbeta(x, 240.03, 12.63), from=0, to=1)
+```
+
+Updated model:
+
+
+```{r include=FALSE}
+imperfect_definition <- "model{
+  Positives ~ dbinom(obsprev, N)
+  obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
+  
+  prevalence ~ dbeta(1, 1)
+  se ~ dbeta(148.43, 16.49)
+  sp ~ dbeta(240.03, 12.63)
+  
+  #data# Positives, N
+  #monitor# prevalence, obsprev, se, sp
+  #inits# prevalence, se, sp
+}
+"
+cat(imperfect_definition, file='basicimperfect.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(imperfect_definition, sep='\n')
+```
+
+Results:
+
+```{r}
+prevalence <- list(chain1=0.05, chain2=0.95)
+se <- list(chain1=0.5, chain2=0.99)
+sp <- list(chain1=0.5, chain2=0.99)
+Positives <- 70
+N <- 100
+results <- run.jags('basicimperfect.bug', n.chains=2, burnin=0, sample=10000)
+results
+```
+
+This time we get sensible estimates for `prevalence`.
+
+
+## Optional Exercise {.fragile}
+
+- Run the same model with se and sp fixed to the mean estimate
+
+  * How does this affect CI for prevalence?
+
+- Run the same model with se and sp fixed to 1
+
+  * How does this affect estimates and CI for prevalence?
+
+
+
+## Optional Solution {.fragile}
+
+Same model with se and sp fixed to the mean estimates:
+
+```{r include=FALSE}
+imperfect_definition <- "model{
+  Positives ~ dbinom(obsprev, N)
+  obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
+  
+  prevalence ~ dbeta(1, 1)
+  se <- 0.9
+  # se ~ dbeta(148.43, 16.49)
+  sp <- 0.95
+  # sp ~ dbeta(240.03, 12.63)
+  
+  #data# Positives, N
+  #monitor# prevalence, obsprev, se, sp
+  #inits# prevalence
+}
+"
+cat(imperfect_definition, file='basicimperfect.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(imperfect_definition, sep='\n')
+```
+
+Note that we have to remove se and sp from the initial values.  Results:
+
+```{r}
+results <- run.jags('basicimperfect.bug', n.chains=2, burnin=0, sample=10000)
+results
+```
+
+Estimates for `prevalence` are a little bit more precise.
+
+Same model with se and sp fixed to one:
+
+```{r include=FALSE}
+imperfect_definition <- "model{
+  Positives ~ dbinom(obsprev, N)
+  obsprev <- (prevalence * se) + ((1-prevalence) * (1-sp))
+  
+  prevalence ~ dbeta(1, 1)
+  se <- 1
+  # se ~ dbeta(148.43, 16.49)
+  sp <- 1
+  # sp ~ dbeta(240.03, 12.63)
+  
+  #data# Positives, N
+  #monitor# prevalence, obsprev, se, sp
+  #inits# prevalence
+}
+"
+cat(imperfect_definition, file='basicimperfect.bug')
+```
+
+```{r comment='', echo=FALSE}
+cat(imperfect_definition, sep='\n')
+```
+
+Results:
+
+```{r}
+results <- run.jags('basicimperfect.bug', n.chains=2, burnin=0, sample=10000)
+results
+```
+
+Biased estimates for `prevalence`!
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+
+## Summary {.fragile}
+
+- Using JAGS / runjags allows us to work with MCMC more easily, safely and efficiently than writing our own sampling algorithms
+
+- But we must *never forget* to check convergence and effective sample size!
+
+- More complex models become easy to implement
+
+  * For example imperfect diagnostic tests
+
+- But just because a model can be defined does not mean that it will be useful for our data
+
+  * We need to be realistic about the information available in the data, what parameters are feasible to estimate, and where we will need to use strong priors
+
+
+- But if Se / Sp are inconsistent then we will get misleading results
+  - In practice, groups with widely varying prevalence rarely have consistent Se / Sp
+  - It is possible to allow Se / Sp to differ between populations, but then there is no benefit of combining the data
+  
+
+## Exercise {.fragile}
+
+Simulate data from 3 tests and analyse using the autohuiwalter function
+
+Do the estimates of Se/Sp correspond to the simulation parameters?
+
+Make some data missing for one or more tests and re-generate the model
+
+Can you see what has changed in the code?
+
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Solution {.fragile}
+
+```{r}
+# Parameter values to simulate:
+N <- 200
+se1 <- 0.8
+sp1 <- 0.95
+se2 <- 0.9
+sp2 <- 0.99
+se3 <- 0.95
+sp3 <- 0.95
+
+Populations <- 2
+prevalence <- c(0.25,0.75)
+Group <- sample(1:Populations, N, replace=TRUE)
+
+# Ensure replicable data:
+set.seed(2020-02-18)
+
+# Simulate the true latent state (which is unobserved in real life):
+true <- rbinom(N, 1, prevalence[Group])
+# Simulate test results for test 1:
+test1 <- rbinom(N, 1, se1*true + (1-sp1)*(1-true))
+# Simulate test results for test 2:
+test2 <- rbinom(N, 1, se2*true + (1-sp2)*(1-true))
+# Simulate test results for test 3:
+test3 <- rbinom(N, 1, se3*true + (1-sp3)*(1-true))
+
+simdata <- data.frame(Population=factor(Group), Test1=test1, Test2=test2, Test3=test3)
+
+source("autohuiwalter.R")
+auto_huiwalter(simdata[,c('Population','Test1','Test2','Test3')], outfile='auto3thw.bug')
+```
+
+Run the model:
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+results <- run.jags('auto3thw.bug')
+```
+
+Remember to check convergence in the usual way!
+
+Then look at the results:
+
+```{r}
+results
+```
+
+And compare to the simulation parameters:
+
+```{r}
+prevalence
+se1
+sp1
+se2
+sp2
+se3
+sp3
+```
+
+We do a reasonably good job of recovering the estimates
+
+Now make some data missing and regenerate the model code:
+
+```{r}
+simdata$Test1[1:5] <- NA
+simdata$Test2[1:2] <- NA
+simdata$Test3[1] <- NA
+
+head(simdata)
+
+auto_huiwalter(simdata[,c('Population','Test1','Test2','Test3')], outfile='auto3tmhw.bug')
+```
+
+The top part of the model now has multiple data tallies for every observed combination of data completeness:
+
+```{r, echo=FALSE, comment=''}
+cat(readLines('auto3tmhw.bug')[3:30], sep='\n')
+```
+
+And the bottom part of the data similarly includes different multinomial tallies for each combination:
+
+```{r, echo=FALSE, comment=''}
+cat(readLines('auto3tmhw.bug')[155:163], sep='\n')
+```
+
+We can run the model in the same way as usual:
+
+```{r, results='hide'}
+results <- run.jags('auto3tmhw.bug')
+```
+
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+## Optional Exercise {.fragile}
+
+Modify the simulation code to introduce an antibody response step between the true status and the test results (see below in the HTML file for example R code).
+
+Simulate data from three antibody tests including the antibody response step
+
+Does the sensitivity / specificity estimated by the model recover the true prevalence parameter?
+
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Optional Exercise Code {.fragile}
+
+```{r}
+# Probability of antibody response conditional on disease status (really bad to illustrate the point):
+se_antibody <- 0.5
+sp_antibody <- 0.75
+# Otherwise the parameters are as before
+
+# True latent infection status as before:
+true <- rbinom(N, 1, prevalence[Group])
+
+# Latent class of antibody response conditional on the true status:
+antibody <- rbinom(N, 1, se_antibody*true + (1-sp_antibody)*(1-true))
+
+# Simulate test results for test 1 conditional on antibody status:
+test1 <- rbinom(N, 1, se1*antibody + (1-sp1)*(1-antibody))
+# etc
+
+# Note that the overall sensitivity and specificity of the tests needs to be corrected for the antibody positive step:
+overall_se1 <- se_antibody*se1 + (1-se_antibody)*(1-sp1)
+overall_sp1 <- sp_antibody*sp1 + (1-sp_antibody)*(1-se1)
+# etc
+```
+
+
+## Optional Solution {.fragile}
+
+
+```{r, results='hide'}
+# Parameter values to simulate:
+N <- 200
+se1 <- 0.8
+sp1 <- 0.95
+se2 <- 0.9
+sp2 <- 0.99
+se3 <- 0.95
+sp3 <- 0.95
+
+# Probability of antibody response conditional on disease status (really bad to illustrate the point):
+se_antibody <- 0.5
+sp_antibody <- 0.75
+
+Populations <- 2
+prevalence <- c(0.25,0.75)
+Group <- sample(1:Populations, N, replace=TRUE)
+
+# Ensure replicable data:
+set.seed(2020-02-18)
+
+# True latent infection status as before:
+true <- rbinom(N, 1, prevalence[Group])
+
+# Latent class of antibody response conditional on the true status:
+antibody <- rbinom(N, 1, se_antibody*true + (1-sp_antibody)*(1-true))
+
+# Simulate test results for all tests conditional on antibody status:
+test1 <- rbinom(N, 1, se1*antibody + (1-sp1)*(1-antibody))
+test2 <- rbinom(N, 1, se2*antibody + (1-sp2)*(1-antibody))
+test3 <- rbinom(N, 1, se3*antibody + (1-sp3)*(1-antibody))
+
+# Note that the overall sensitivity and specificity of the tests needs to be corrected for the antibody positive step:
+overall_se1 <- se_antibody*se1 + (1-se_antibody)*(1-sp1)
+overall_sp1 <- sp_antibody*sp1 + (1-sp_antibody)*(1-se1)
+
+overall_se2 <- se_antibody*se2 + (1-se_antibody)*(1-sp2)
+overall_sp2 <- sp_antibody*sp2 + (1-sp_antibody)*(1-se2)
+
+overall_se3 <- se_antibody*se3 + (1-se_antibody)*(1-sp3)
+overall_sp3 <- sp_antibody*sp3 + (1-sp_antibody)*(1-se3)
+
+simdata <- data.frame(Population=factor(Group), Test1=test1, Test2=test2, Test3=test3)
+
+source("autohuiwalter.R")
+auto_huiwalter(simdata[,c('Population','Test1','Test2','Test3')], outfile='auto3abthw.bug')
+
+results <- run.jags('auto3abthw.bug')
+
+```
+
+Now check the results:
+
+```{r}
+results
+```
+
+We do a horrible job of estimating prevalence in the second population:
+
+```{r}
+prevalence
+```
+
+And the test sensitivity/specificity estimates are nowhere near the overall sensitivity/specificity after correcting for antibody status:
+
+```{r}
+overall_se1
+overall_se2
+overall_se3
+overall_sp1
+overall_sp2
+overall_sp3
+```
+
+But they are close to the sensitivity/specificity values that are conditional on the antibody status:
+
+```{r}
+se1
+se2
+se3
+sp1
+sp2
+sp3
+```
+
+So our model is effectively estimating a latent condition of antibody status, and not a latent condition of true positive status - i.e. the thing that we have pulled out of the hat is not the rabbit that we were hoping for...
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+
+# Session 3b:  Hui-Walter models for multiple tests with conditional depdendence
+
+## Branching of processes leading to test results
+
+- Sometimes we have multiple tests that are detecting a similar thing
+  
+  - For example:  two antibody tests and one antigen test
+  - The antibody tests will be correlated
+  
+. . .
+
+- Or even three antibody tests where two are primed to detect the same thing, and one has a different target!
+  
+  - In this case all three tests are correlated, but two are more strongly correlated
+
+
+## Simulating data
+
+It helps to consider the data simulation as a biological process.  
+
+```{r}
+# Parameter values to simulate:
+N <- 200
+se1 <- 0.8; sp1 <- 0.95
+se2 <- 0.9; sp2 <- 0.99
+se3 <- 0.95; sp3 <- 0.95
+
+Populations <- 2
+prevalence <- c(0.25,0.75)
+Group <- rep(1:Populations, each=N)
+
+# Ensure replicable data:
+set.seed(2017-11-21)
+
+# The probability of an antibody response given disease:
+abse <- 0.8
+# The probability of no antibody response given no disease:
+absp <- 1 - 0.2
+```
+
+---
+
+```{r}
+# Simulate the true latent state:
+true <- rbinom(N*Populations, 1, prevalence[Group])
+
+# Tests 1 & 2 will be co-dependent on antibody response:
+antibody <- rbinom(N*Populations, 1, abse*true + (1-absp)*(1-true))
+# Simulate test 1 & 2 results based on this other latent state:
+test1 <- rbinom(N*Populations, 1, se1*antibody + (1-sp1)*(1-antibody))
+test2 <- rbinom(N*Populations, 1, se2*antibody + (1-sp2)*(1-antibody))
+
+# Simulate test results for the independent test 3:
+test3 <- rbinom(N*Populations, 1, se3*true + (1-sp3)*(1-true))
+
+ind3tests <- data.frame(Population=Group, Test1=test1, Test2=test2, Test3=test3)
+```
+
+---
+
+```{r}
+# The overall sensitivity of the correlated tests is:
+abse*se1 + (1-abse)*(1-sp1)
+abse*se2 + (1-abse)*(1-sp2)
+
+# The overall specificity of the correlated tests is:
+absp*sp1 + (1-absp)*(1-se1)
+absp*sp2 + (1-absp)*(1-se2)
+```
+
+. . .
+
+We need to think carefully about what we are conditioning on when interpreting sensitivity and specificity!
+
+
+## Model specification
+
+```{r, eval=FALSE}
+
+	se_prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +covse12 +covse13 +covse23)
+	sp_prob[1,p] <- (1-prev[p]) * (sp[1]*sp[2]*sp[3] +covsp12 +covsp13 +covsp23)
+
+	se_prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3]) -covse12 -covse13 +covse23)
+	sp_prob[2,p] <- (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] -covsp12 -covsp13 +covsp23)
+
+	...
+		
+	# Covariance in sensitivity between tests 1 and 2:
+	covse12 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )
+	# Covariance in specificity between tests 1 and 2:
+	covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )
+
+```
+
+
+## Generating the model
+
+First use autohuiwalter to create a model file:
+
+```{r, results='hide'}
+auto_huiwalter(ind3tests, 'auto3tihw.bug')
+```
+
+Then find the lines for the covariances that we want to activate:
+
+```{r, echo=FALSE, comment=''}
+ml <- readLines('auto3tihw.bug')
+cat(gsub('\t','',ml[87:92]), sep='\n')
+```
+
+---
+
+And edit so it looks like:
+
+```{r, echo=FALSE, comment=''}
+ml[87:92] <- c('	# Covariance in sensitivity between Test1 and Test2 tests:', '	covse12 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )  ## if the sensitivity of these tests may be correlated', '	 # covse12 <- 0  ## if the sensitivity of these tests can be assumed to be independent','	# Covariance in specificity between Test1 and Test2 tests:', '	covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )  ## if the specificity of these tests may be correlated', '	 # covsp12 <- 0  ## if the specificity of these tests can be assumed to be independent')
+cat(ml, file='auto3tihw.bug', sep='\n')
+ml <- readLines('auto3tihw.bug')
+cat(gsub('\t','',ml[87:92]), sep='\n')
+```
+
+[i.e. swap the comments around]
+
+---
+
+You will also need to uncomment out the relevant initial values for BOTH chains (on lines 117-122 and 128-133):
+
+```{r, echo=FALSE, comment=''}
+ml <- readLines('auto3tihw.bug')
+cat(gsub('\t','',ml[128:133]), sep='\n')
+```
+
+So that they look like:
+
+```{r, echo=FALSE, comment=''}
+ml[c(117,120)] <- c('"covse12" <- 0', '"covsp12" <- 0')
+ml[c(128,131)] <- c('"covse12" <- 0', '"covsp12" <- 0')
+cat(ml, file='auto3tihw.bug', sep='\n')
+ml <- readLines('auto3tihw.bug')
+cat(gsub('\t','',ml[128:133]), sep='\n')
+ff <- file.copy('auto3tihw.bug', 'auto3tihw2.bug')
+```
+
+```{r, results='hide'}
+results <- run.jags('auto3tihw.bug')
+```
+
+
+## Exercise {.fragile}
+
+Simulate data with N=1000 and dependence between tests 1 and 2
+
+Then fit a model assuming independence between all tests and compare the results to your simulation parameters
+
+Now turn on covariance between tests 1 and 2 and refit the model.  Are the results more reasonable?
+
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Solution {.fragile}
+
+
+```{r}
+# Parameter values to simulate:
+N <- 1000
+se1 <- 0.8
+se2 <- 0.9
+se3 <- 0.95
+sp1 <- 0.95
+sp2 <- 0.99
+sp3 <- 0.95
+
+# The probability of an antibody response given disease:
+abse <- 0.8
+# The probability of no antibody response given no disease:
+absp <- 1 - 0.2
+
+# Simulate the true latent state:
+true <- rbinom(N*Populations, 1, prevalence[Group])
+
+# Tests 1 & 2 will be co-dependent on antibody response:
+antibody <- rbinom(N*Populations, 1, abse*true + (1-absp)*(1-true))
+# Simulate test 1 & 2 results based on this other latent state:
+test1 <- rbinom(N*Populations, 1, se1*antibody + (1-sp1)*(1-antibody))
+test2 <- rbinom(N*Populations, 1, se2*antibody + (1-sp2)*(1-antibody))
+
+# Simulate test results for the independent test 3:
+test3 <- rbinom(N*Populations, 1, se3*true + (1-sp3)*(1-true))
+
+ind3tests <- data.frame(Population=Group, Test1=test1, Test2=test2, Test3=test3)
+
+# The overall sensitivity of the correlated tests is:
+abse*se1 + (1-abse)*(1-sp1)
+abse*se2 + (1-abse)*(1-sp2)
+
+# The overall specificity of the correlated tests is:
+absp*sp1 + (1-absp)*(1-se1)
+absp*sp2 + (1-absp)*(1-se2)
+
+source("autohuiwalter.R")
+auto_huiwalter(ind3tests, outfile='auto3tihw.bug')
+```
+
+Then change relevant lines in auto3tihw.bug so that it looks like:
+
+```{r, echo=FALSE}
+unlink('auto3tihw.bug')
+ff <- file.copy('auto3tihw2.bug', 'auto3tihw.bug')
+Sys.sleep(1)
+```
+
+```{r, echo=FALSE, comment=''}
+cat(readLines('auto3tihw.bug'), sep='\n')
+```
+
+Then run the model:
+
+```{r, results='hide'}
+results <- run.jags('auto3tihw.bug')
+```
+
+Now check the results:
+
+```{r}
+results
+```
+
+We do a better job of estimating prevalence, and the se/sp for tests 1 and 2 better reflect the overall probability conditional on true status (i.e. corrected for antibody status). But notice that our effective sample size is much smaller than it was! We could run the model for a bit longer:
+
+```{r, results='hide'}
+results <- extend.jags(results)
+```
+
+```{r}
+results
+```
+
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+## Optional Exercise {.fragile}
+
+Re-fit a model to this data using all three possible covse and covsp parameters
+
+What do you notice about the results?
+
+`r if(params$presentation) {"\\begin{comment}"}`
+
+## Optional Solution {.fragile}
+
+You can either manually change all 3 covse/covsp from before, or regenerate the model using the covon=TRUE option:
+
+```{r, results='hide'}
+auto_huiwalter(ind3tests, outfile='auto3tichw.bug', covon=TRUE)
+results <- run.jags('auto3tichw.bug')
+```
+
+```{r}
+results
+```
+
+This chains haven't converged (check out the psrf): the model is (or is close to being) unidentifiable.
+
+`r if(params$presentation) {"\\end{comment}"}`
+
+
+# Session 3c:  Model selection
+
+## Motivation
+
+- Choosing between candidate models
+  * DIC
+  * Bayes Factors
+  * BIC
+  * WAIC
+  * Effect size spans zero?
+
+. . .
+
+- Assessing model adequacy:
+  * Verify using a simulation study
+  * Posterior predictive p-values
+  * Comparison of results from different models eg:
+      * Independence vs covariance
+      * Different priors
+
+. . .
+
+Others?
+
+## DIC and WAIC
+
+- DIC
+  * Works well for hierarchical normal models
+  * To calculate:
+    * Add dic and ped to the monitors in runjags
+    * But be cautious with these types of models
+
+. . .
+
+- WAIC
+  * Approximation to LOO
+  * Needs independent likelihoods
+    * Could work for individual-level models?
+  * Currently a pain to calculate
+    * See WAIC.R in the GitHub directory
+    * And/or wait for updates to runjags (and particularly JAGS 5)
+
+. . .
+
+```{r, eval=FALSE}
+install.packages('runjags', repos=c("https://ku-awdc.github.io/drat/", "https://cran.rstudio.com/"))
+```
+
+## Some advice
+
+- Always start by simulating data and verifying that you can recover the parameters
+  * The simulation can be more complex than the model!
+  * See the autorun.jags function
+  
+- If you have different candidate models then compare the posteriors between models
+
+. . .
+
+- A particular issue is test dependence
+  * Is there biological justification for the correlation?
+  * Are the test sensitivity/specificity estimates consistent?
+  * Do the covse / covsp estimates overlap zero?
+  
+. . .
+
+- Any other good advice?!?
+
+
+## Free practical time
+
+- Explore the optional exercises (and solutions) and feel free to ask questions!
+
+- Feedback very welcome!
+
+```{r cleanup, include=FALSE}
+unlink('glm_hw3t.bug')
+unlink('auto3thw.bug')
+unlink('auto3abthw.bug')
+unlink('auto3tihw.bug')
+unlink('auto3tichw.bug')
+unlink('auto3tihw2.bug')
+unlink('auto3cvhw.bug')
+```
+
