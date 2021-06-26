@@ -192,7 +192,7 @@ pre code {
 <h2>Hui-Walter models with multiple populations</h2>
 <ul>
 <li><p>Basically an extension of the single-population model</p></li>
-<li><p>Works best with multiple populations each with differing prevalences</p>
+<li><p>Works best with multiple populations each with differing prevalence</p>
 <ul>
 <li>Including an unexposed population works well</li>
 <li>BUT be wary of assumptions regarding constant sensitivity/specificity across populations with very different types of infections</li>
@@ -206,16 +206,17 @@ pre code {
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
     # Test1- Test2- Pop1
       prob[1, p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
-    ## etc ##
+    ## snip ##
+      
     prev[p] ~ dbeta(1, 1)
   }
 
-  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
-  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, HPSe, HPSp
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior
   #monitor# prev, prob, se, sp
   #inits# prev, se, sp
 }</code></pre>
@@ -225,9 +226,7 @@ pre code {
 <pre class="r"><code>model{
   for(p in 1:Populations){
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
-    # Test1- Test2- Pop1
-      prob[1, p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
-    ## etc ##
+    ## snip ##    
     
       logit(prev[p]) &lt;- intercept + population_effect[p]
       population_effect[p] ~ dnorm(0, tau)
@@ -236,12 +235,12 @@ pre code {
   tau ~ dgamma(0.01, 0.01)
   intercept ~ dnorm(0, 0.33)
   
-  se[1] ~ dbeta(HPSe[1,1], HPSe[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(HPSp[1,1], HPSp[1,2])
-  se[2] ~ dbeta(HPSe[2,1], HPSe[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(HPSp[2,1], HPSp[2,2])
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, HPSe, HPSp
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior
   #monitor# prev, prob, se, sp
   #inits# prev, se, sp
 }</code></pre>
@@ -253,6 +252,7 @@ pre code {
 <ul>
 <li>Do you have an endemic and epidemic population?</li>
 <li>Or vaccinated and unvaccinated?</li>
+<li>If so then the assumptions might not hold!</li>
 </ul></li>
 </ul>
 <div class="incremental">
@@ -282,16 +282,42 @@ pre code {
 <div id="incorporating-populations-with-known-prevalence" class="section level2">
 <h2>Incorporating populations with known prevalence</h2>
 <p>Up to now prevalence has been a parameter, but it can also be (partially) observed:</p>
-<p><em>TODO</em></p>
+<pre class="r"><code>model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+    # Test1- Test2- Pop1
+      prob[1, p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    ## snip ##
+      
+    prev[p] ~ dbeta(1, 1)
+  }
+
+  ## snip ##
+
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior, prev
+  #monitor# prev, prob, se, sp
+  #inits# prev, se, sp
+}</code></pre>
+<hr />
+<p>To fix the prevalence of population 1 we could do:</p>
+<pre class="r"><code>Populations &lt;- 5
+prev &lt;- rep(NA, Populations)
+prev[1] &lt;- 0
+prev
+## [1]  0 NA NA NA NA</code></pre>
+<div class="incremental">
+<p>But you also need to account for this in the initial values:</p>
+<pre class="r"><code>prev &lt;- list(chain1=c(NA, 0.2, 0.4, 0.6, 0.8), chain2=c(NA, 0.8, 0.6, 0.4, 0.2))</code></pre>
+</div>
 </div>
 <div id="other-runjags-options" class="section level2">
 <h2>Other runjags options</h2>
 <p>There are a large number of other options to runjags. Some highlights:</p>
 <ul>
-<li>The method can be parallel or background or bgparallel</li>
-<li>You can use extend.jags to continue running an existing model (e.g. to increase the sample size)</li>
-<li>You can use coda::as.mcmc.list to extract the underlying MCMC chains</li>
-<li>Use the summary() method to extract summary statistics
+<li>The method can be <code>parallel</code> or <code>background</code> or <code>bgparallel</code></li>
+<li>You can use <code>extend.jags</code> to continue running an existing model (e.g. to increase the sample size)</li>
+<li>You can use <code>coda::as.mcmc.list</code> to extract the underlying MCMC chains</li>
+<li>Use the <code>summary()</code> method to extract summary statistics
 <ul>
 <li>See <code>?summary.runjags</code> and <code>?runjagsclass</code> for more information</li>
 </ul></li>
@@ -300,10 +326,10 @@ pre code {
 <div id="using-embedded-character-strings" class="section level2">
 <h2>Using embedded character strings</h2>
 <p>For simple models we might not want to bother with an external text file. Then we can do:</p>
-<pre class="r"><code>mt &lt;- &quot;
+<pre class="r"><code>model_string &lt;- &quot;
 model{
   Positives ~ dbinom(prevalence, TotalTests)
-  prevalence ~ dbeta(2, 2)
+  prevalence ~ dbeta(1, 1)
   
   #data# Positives, TotalTests
   #monitor# prevalence
@@ -313,7 +339,7 @@ model{
 Positives &lt;- 7
 TotalTests &lt;- 10
 prevalence &lt;- list(chain1=0.01, chain2=0.99)
-results &lt;- run.jags(mt, n.chains=2)</code></pre>
+results &lt;- run.jags(model_string, n.chains=2)</code></pre>
 <ul>
 <li>But I would advise that you stick to using a separate text file!</li>
 </ul>
@@ -332,7 +358,7 @@ results &lt;- run.jags(mt, n.chains=2)</code></pre>
 }</code></pre>
 <pre class="r"><code>.RNG.name &lt;- &quot;lecuyer::RngStream&quot;
 .RNG.seed &lt;- list(chain1=1, chain2=2)
-results &lt;- run.jags(&#39;basicjags.bug&#39;, n.chains=2)</code></pre>
+results &lt;- run.jags(model_string, n.chains=2)</code></pre>
 <ul>
 <li>Every time this model is run the results will now be identical</li>
 </ul>
@@ -348,8 +374,12 @@ results &lt;- run.jags(&#39;basicjags.bug&#39;, n.chains=2)</code></pre>
 <li><p>What happens if our fundamental assumptions about consistent Se/Sp are broken?</p></li>
 </ol>
 </div>
-<div id="exercise-plan-todo" class="section level2">
-<h2>Exercise plan TODO</h2>
+<div id="exercise-1" class="section level2 fragile">
+<h2 class="fragile">Exercise 1</h2>
+<p>Simulate data using multiple populations. You can use this R code:</p>
+</div>
+<div id="exercise-plan-todo" class="section level2 fragile">
+<h2 class="fragile">Exercise plan TODO</h2>
 <ul>
 <li>Simulate data with different numbers of populations
 <ul>

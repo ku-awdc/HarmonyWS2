@@ -512,41 +512,76 @@ Tally &lt;- as.numeric(twoXtwo)</code></pre>
 se &lt;- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
 sp &lt;- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
 
-results &lt;- run.jags(&#39;hw_truncated.txt&#39;, n.chains=2)
+results_tr_1000 &lt;- run.jags(&#39;hw_truncated.txt&#39;, n.chains=2, sample=10000)
 
 # Note: this is only commented out to save space in the exercise file!
-# plot(results)
+# plot(results_tr_1000)
 # check convergence and effective sample size, and then interpret results:
-results
+results_tr_1000
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                              
-##           Lower95  Median Upper95     Mean        SD Mode       MCerr MC%ofSD
-## prev      0.25498  0.4165 0.59704  0.42323  0.095184   --   0.0066057     6.9
-## prob[1]   0.39222 0.42304 0.45317  0.42297  0.015565   --  0.00012414     0.8
-## prob[2]   0.18739 0.21136 0.23752  0.21151   0.01283   --  0.00010334     0.8
-## prob[3]  0.071983 0.08856  0.1073 0.088811 0.0090293   -- 0.000074158     0.8
-## prob[4]   0.24999 0.27668  0.3056  0.27671  0.014181   --  0.00011879     0.8
-## se[1]     0.76047 0.86617 0.99994  0.86896   0.07056   --    0.002916     4.1
-## se[2]      0.5633 0.73059 0.98835  0.74815   0.12909   --   0.0085876     6.7
-## sp[1]     0.65521 0.78304  0.9814  0.79953  0.098596   --   0.0067278     6.8
-## sp[2]     0.82728 0.89652 0.99996  0.90111  0.050496   --   0.0021104     4.2
-## deviance   20.113  22.501  27.976   23.151    2.4983   --    0.023476     0.9
+##          Lower95   Median Upper95     Mean        SD Mode       MCerr MC%ofSD
+## prev     0.25128  0.41143 0.59035  0.41598  0.091472   --   0.0062507     6.8
+## prob[1]  0.39199  0.42272 0.45327  0.42278  0.015644   --    0.000126     0.8
+## prob[2]  0.18594  0.21127 0.23605  0.21155  0.012819   -- 0.000097518     0.8
+## prob[3]  0.07204 0.088564 0.10729 0.088896 0.0090129   -- 0.000072103     0.8
+## prob[4]  0.24911  0.27663 0.30484  0.27677  0.014093   --  0.00011724     0.8
+## se[1]    0.76238  0.87062 0.99961  0.87181   0.07113   --   0.0030292     4.3
+## se[2]    0.56389  0.74481 0.98326  0.75516   0.12499   --   0.0081786     6.5
+## sp[1]    0.65411  0.77266 0.98057  0.79221  0.095261   --   0.0064441     6.8
+## sp[2]    0.82363  0.89364 0.99827  0.89903  0.050939   --    0.002181     4.3
+## deviance   20.12   22.503  28.007   23.146    2.4659   --    0.023647       1
 ##                                  
-##          SSeff       AC.10   psrf
-## prev       208      0.8066 1.0079
-## prob[1]  15721  0.00026768 1.0003
-## prob[2]  15415  -0.0042903      1
-## prob[3]  14825 -0.00048769      1
-## prob[4]  14253   0.0085682 1.0001
-## se[1]      586     0.55444 1.0051
-## se[2]      226      0.7842 1.0033
-## sp[1]      215     0.79507 1.0045
-## sp[2]      573     0.55836 1.0048
-## deviance 11325  -0.0042596 1.0001
+##          SSeff      AC.10    psrf
+## prev       214    0.79889  1.0009
+## prob[1]  15414  0.0068917  1.0001
+## prob[2]  17279 0.00062564  1.0003
+## prob[3]  15625 -0.0005236  1.0001
+## prob[4]  14450  0.0079337 0.99995
+## se[1]      551    0.56114  1.0001
+## se[2]      234    0.77748  1.0001
+## sp[1]      219    0.78804  1.0003
+## sp[2]      546    0.56416  1.0002
+## deviance 10875 -0.0027098  1.0004
 ## 
-## Total time taken: 1.5 seconds</code></pre>
-<p>Note that this model sometimes does not converge, and even when it does converge the 95% confidence intervals are all quite wide!</p>
+## Total time taken: 1.4 seconds</code></pre>
+<p>Note that model does converge, but the effective sample size is NOT high enough with 10000 samples - we need to run for longer to get reliable results:</p>
+<pre class="r"><code>results_tr_1000 &lt;- run.jags(&#39;hw_truncated.txt&#39;, n.chains=2, sample=50000)
+
+# Note: this is only commented out to save space in the exercise file!
+# plot(results_tr_1000)
+# check convergence and effective sample size, and then interpret results:
+results_tr_1000
+## 
+## JAGS model summary statistics from 100000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                              
+##           Lower95  Median Upper95     Mean        SD Mode       MCerr MC%ofSD
+## prev      0.24943 0.40794 0.58518  0.41417  0.090974   --   0.0027255       3
+## prob[1]   0.39321 0.42277 0.45369  0.42299  0.015572   --  0.00011107     0.7
+## prob[2]   0.18628  0.2113 0.23685  0.21148  0.012948   -- 0.000090265     0.7
+## prob[3]  0.071545 0.08865 0.10654 0.088929 0.0089701   -- 0.000063428     0.7
+## prob[4]   0.24875 0.27643 0.30418   0.2766  0.014184   --   0.0001003     0.7
+## se[1]     0.75997 0.86457 0.99998  0.86872  0.071952   --   0.0014114       2
+## se[2]     0.56654 0.75136 0.98563  0.76063    0.1252   --   0.0037253       3
+## sp[1]      0.6533 0.76748  0.9753  0.78784  0.093308   --   0.0027846       3
+## sp[2]     0.82568 0.89685 0.99997   0.9013  0.051093   --  0.00099961       2
+## deviance   20.105  22.514   28.14   23.158     2.494   --    0.017784     0.7
+##                                   
+##          SSeff       AC.10    psrf
+## prev      1114     0.79272  1.0012
+## prob[1]  19657   0.0017729  1.0001
+## prob[2]  20577  -0.0013115       1
+## prob[3]  20000  0.00060739  1.0001
+## prob[4]  20000 -0.00051422 0.99996
+## se[1]     2599      0.5612  1.0013
+## se[2]     1129     0.76537  1.0002
+## sp[1]     1123     0.77586  1.0002
+## sp[2]     2613     0.56284  1.0012
+## deviance 19668  -0.0008528  1.0003
+## 
+## Total time taken: 3.4 seconds</code></pre>
+<p>Now we can see that the 95% confidence intervals for prev, se and sp are all quite wide, but at least they do contain the simulation values!</p>
 </div>
 <div id="exercise-2" class="section level2 fragile">
 <h2 class="fragile">Exercise 2</h2>
@@ -572,7 +607,7 @@ results
 ## [1] &quot;Here is a plot of the specified distribution.&quot;
 ## [1] &quot;Descriptive statistics for this distribution are:&quot;
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##  0.7994  0.8851  0.9016  0.8999  0.9163  0.9776 
+##  0.7967  0.8851  0.9013  0.8998  0.9164  0.9636 
 ## [1] &quot;Verification: The percentile value 0.85 corresponds to the 0.025 th percentile&quot;
 hpd(qbeta, shape1=148.43, shape2=16.49)
 ## [1] 0.8536523 0.9435944
@@ -584,7 +619,7 @@ curve(dbeta(x, 148.43, 16.49), from=0, to=1)</code></pre>
 ## [1] &quot;Here is a plot of the specified distribution.&quot;
 ## [1] &quot;Descriptive statistics for this distribution are:&quot;
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##  0.8777  0.9413  0.9511  0.9499  0.9596  0.9880 
+##  0.8865  0.9419  0.9513  0.9502  0.9598  0.9874 
 ## [1] &quot;Verification: The percentile value 0.92 corresponds to the 0.025 th percentile&quot;
 hpd(qbeta, shape1=240.03, shape2=12.63)
 ## [1] 0.9227439 0.9752054
@@ -616,77 +651,382 @@ curve(dbeta(x, 240.03, 12.63), from=0, to=1)</code></pre>
   #monitor# prev, prob, se, sp, deviance
   #inits# prev, se, sp
 }</code></pre>
-<pre class="r"><code>results &lt;- run.jags(&#39;hw_stronginf.txt&#39;, n.chains=2)
+<pre class="r"><code>results_si_1000 &lt;- run.jags(&#39;hw_stronginf.txt&#39;, n.chains=2)
 
 # Note: this is only commented out to save space in the exercise file!
-# plot(results)
+# plot(results_si_1000)
 # check convergence and effective sample size, and then interpret results:
-results
+results_si_1000
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                               
-##           Lower95   Median Upper95     Mean        SD Mode       MCerr MC%ofSD
-## prev      0.46838  0.51517 0.56643   0.5157  0.024938   --  0.00040651     1.6
-## prob[1]   0.39456  0.42418 0.45517  0.42421  0.015462   --  0.00013135     0.8
-## prob[2]   0.18532   0.2101 0.23516  0.21016  0.012769   --  0.00011586     0.9
-## prob[3]  0.070537 0.087634 0.10497 0.087829 0.0088791   -- 0.000083171     0.9
-## prob[4]   0.25126  0.27777 0.30616   0.2778  0.014002   --  0.00012457     0.9
-## se[1]     0.85225  0.90066 0.94352  0.89916  0.023648   --  0.00039229     1.7
-## se[2]     0.54597  0.59288 0.64288  0.59315  0.024565   --  0.00024675       1
-## sp[1]     0.92254  0.95061 0.97563  0.94941   0.01392   --  0.00016214     1.2
-## sp[2]     0.83039  0.87587 0.92564  0.87705  0.024162   --  0.00037381     1.5
-## deviance   20.103   22.444  27.835   23.055    2.3966   --    0.023476       1
+##                                                                              
+##           Lower95   Median Upper95     Mean       SD Mode       MCerr MC%ofSD
+## prev      0.46781  0.51566 0.56415  0.51635 0.024685   --   0.0003844     1.6
+## prob[1]   0.39312  0.42398 0.45455  0.42406 0.015652   --  0.00013646     0.9
+## prob[2]   0.18506  0.21007 0.23493  0.21021 0.012848   --  0.00012097     0.9
+## prob[3]  0.069885 0.087475 0.10508 0.087773 0.009004   -- 0.000084778     0.9
+## prob[4]   0.25068  0.27775 0.30523  0.27796 0.013953   --  0.00012518     0.9
+## se[1]     0.85106  0.90005 0.94222  0.89852 0.023418   --  0.00038796     1.7
+## se[2]     0.54503  0.59308 0.64137  0.59321  0.02464   --  0.00025914     1.1
+## sp[1]     0.92165  0.95061 0.97385  0.94945 0.013709   --   0.0001592     1.2
+## sp[2]     0.83141  0.87695 0.92561  0.87749 0.024111   --  0.00036771     1.5
+## deviance   20.105   22.471   27.85   23.096   2.4279   --    0.023393       1
 ##                                   
 ##          SSeff       AC.10    psrf
-## prev      3763    0.031131 0.99997
-## prob[1]  13859  -0.0062648 0.99995
-## prob[2]  12147  -0.0092846 0.99998
-## prob[3]  11397    0.018586 0.99999
-## prob[4]  12633 0.000023053       1
-## se[1]     3634    0.044286  1.0001
-## se[2]     9911  -0.0039477  1.0001
-## sp[1]     7371   0.0021989  1.0001
-## sp[2]     4178    0.048204 0.99997
-## deviance 10422  -0.0041454 0.99996
+## prev      4124      0.0366  1.0001
+## prob[1]  13157  -0.0088973 0.99999
+## prob[2]  11279    0.011834 0.99998
+## prob[3]  11280   0.0011982  1.0001
+## prob[4]  12423   0.0058661 0.99999
+## se[1]     3644    0.029561  1.0007
+## se[2]     9041    0.014571       1
+## sp[1]     7415 -0.00011668  1.0003
+## sp[2]     4300    0.018129  1.0006
+## deviance 10771   0.0020774  1.0008
 ## 
-## Total time taken: 1.5 seconds</code></pre>
-<p>Note that the 95% confidence intervals are much narrower now, including for test 2!!!</p>
+## Total time taken: 1.4 seconds</code></pre>
+<p>Note that the 95% confidence intervals are much narrower now, including for test 2!!! The effective sample size is also much higher because the model is more identifiable (i.e. better behaved).</p>
 </div>
 <div id="exercise-3" class="section level2 fragile">
 <h2 class="fragile">Exercise 3</h2>
-<p>Now adjust the sample size so that you have N=100, re-simulate the data, and re-run the models with both sets of priors. - What do you notice about the results compared to N=1000?</p>
-<p>Also change the prevalence from 50% to 10% or 90% - How does this affect your ability to estimate the sensitivity and specificity of test 2 (using strong priors for test 1)?</p>
+<p>Now adjust the sample size so that you have N=100, re-simulate the data, and re-run the models with both sets of priors.</p>
+<ul>
+<li>What do you notice about the results compared to N=1000?</li>
+</ul>
+<p>Also change the prevalence from 50% to 10% or 90%</p>
+<ul>
+<li>How does this affect your ability to estimate the sensitivity and specificity of test 2 (using strong priors for test 1)?</li>
+</ul>
 </div>
 <div id="solution-3" class="section level2 fragile">
 <h2 class="fragile">Solution 3</h2>
-<p>TODO</p>
-<ul>
-<li>Change sample size
-<ul>
-<li>Wider CI particualrly with weak priors</li>
-</ul></li>
-<li>Change the simulated prevalence
-<ul>
-<li>Low prevalence = Sp can be estimated</li>
-<li>High prevalence = Se can be estimated</li>
-</ul></li>
-</ul>
+<p>We can change the sample size like so:</p>
+<pre class="r"><code># Set a random seed so that the data are reproducible:
+set.seed(2021-06-28)
+
+se &lt;- c(0.9, 0.6)
+sp &lt;- c(0.95, 0.9)
+N &lt;- 100
+prevalence &lt;- 0.5
+
+data &lt;- tibble(Status = rbinom(N, 1, prevalence)) %&gt;%
+  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %&gt;%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+
+twoXtwo &lt;- with(data, table(Test1, Test2))
+Tally &lt;- as.numeric(twoXtwo)
+
+results_si_100 &lt;- run.jags(&#39;hw_stronginf.txt&#39;, n.chains=2)
+results_tr_100 &lt;- run.jags(&#39;hw_truncated.txt&#39;, n.chains=2)
+
+# Remember to check convergence!
+# plot(results_si_100)
+# plot(results_tr_100)
+
+# Comparison to larger dataset:
+results_si_100
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                           
+##           Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
+## prev       0.3754 0.49546 0.61245 0.49557 0.060474   -- 0.00059764       1
+## prob[1]   0.32823 0.42072 0.51919  0.4216 0.048785   -- 0.00042186     0.9
+## prob[2]   0.16107 0.23922 0.32163 0.24062 0.041612   -- 0.00038234     0.9
+## prob[3]  0.051054 0.10514 0.16764 0.10777 0.030287   -- 0.00027885     0.9
+## prob[4]   0.15125 0.22843 0.30955 0.23002 0.041021   --  0.0003636     0.9
+## se[1]     0.85191 0.90031 0.94384 0.89887  0.02382   -- 0.00023593       1
+## se[2]      0.3602 0.50746 0.65148 0.50747 0.075044   -- 0.00068372     0.9
+## sp[1]     0.92271 0.95083 0.97547 0.94968 0.013798   -- 0.00013255       1
+## sp[2]     0.70333 0.83295 0.94319 0.82944 0.061593   --  0.0005949       1
+## deviance    13.32  15.625   21.03  16.258   2.3922   --   0.024884       1
+##                                  
+##          SSeff      AC.10    psrf
+## prev     10239 0.00038676  1.0001
+## prob[1]  13373   0.007032 0.99996
+## prob[2]  11845  0.0059733 0.99997
+## prob[3]  11797 0.00025019  1.0003
+## prob[4]  12728  0.0034367       1
+## se[1]    10194 -0.0032789       1
+## se[2]    12047  0.0058782 0.99996
+## sp[1]    10835    -0.0019       1
+## sp[2]    10720  0.0090259  1.0001
+## deviance  9242  -0.004217  1.0003
+## 
+## Total time taken: 1.3 seconds
+results_tr_100
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                           
+##           Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
+## prev      0.12056 0.37654 0.67062 0.38699  0.14524   --  0.0037988     2.6
+## prob[1]    0.3098 0.40532 0.49977  0.4062 0.048826   -- 0.00044086     0.9
+## prob[2]   0.17384 0.25583 0.34334 0.25727 0.043434   --  0.0004083     0.9
+## prob[3]  0.059726 0.11846   0.185 0.12075 0.032734   -- 0.00035316     1.1
+## prob[4]   0.14184 0.21396 0.29802 0.21578  0.04038   -- 0.00037408     0.9
+## se[1]     0.57712 0.79033 0.99993 0.78666  0.12263   --  0.0020786     1.7
+## se[2]     0.41702 0.65766 0.99978 0.67058  0.16724   --  0.0037385     2.2
+## sp[1]     0.54546 0.71598 0.98056 0.73059  0.11639   --  0.0025588     2.2
+## sp[2]     0.72036 0.85808 0.99996 0.85622 0.080404   --  0.0012862     1.6
+## deviance   13.335  16.202  22.782  16.951   2.8868   --   0.037843     1.3
+##                                  
+##          SSeff      AC.10    psrf
+## prev      1462    0.23279  1.0033
+## prob[1]  12266   0.010234 0.99996
+## prob[2]  11316   0.011842  1.0001
+## prob[3]   8591 -0.0022411  1.0003
+## prob[4]  11652  0.0029445       1
+## se[1]     3480   0.028372 0.99997
+## se[2]     2001     0.1565  1.0041
+## sp[1]     2069     0.1504  1.0037
+## sp[2]     3908   0.031907  1.0002
+## deviance  5819   0.013562 0.99999
+## 
+## Total time taken: 1.4 seconds
+results_si_1000
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                              
+##           Lower95   Median Upper95     Mean       SD Mode       MCerr MC%ofSD
+## prev      0.46781  0.51566 0.56415  0.51635 0.024685   --   0.0003844     1.6
+## prob[1]   0.39312  0.42398 0.45455  0.42406 0.015652   --  0.00013646     0.9
+## prob[2]   0.18506  0.21007 0.23493  0.21021 0.012848   --  0.00012097     0.9
+## prob[3]  0.069885 0.087475 0.10508 0.087773 0.009004   -- 0.000084778     0.9
+## prob[4]   0.25068  0.27775 0.30523  0.27796 0.013953   --  0.00012518     0.9
+## se[1]     0.85106  0.90005 0.94222  0.89852 0.023418   --  0.00038796     1.7
+## se[2]     0.54503  0.59308 0.64137  0.59321  0.02464   --  0.00025914     1.1
+## sp[1]     0.92165  0.95061 0.97385  0.94945 0.013709   --   0.0001592     1.2
+## sp[2]     0.83141  0.87695 0.92561  0.87749 0.024111   --  0.00036771     1.5
+## deviance   20.105   22.471   27.85   23.096   2.4279   --    0.023393       1
+##                                   
+##          SSeff       AC.10    psrf
+## prev      4124      0.0366  1.0001
+## prob[1]  13157  -0.0088973 0.99999
+## prob[2]  11279    0.011834 0.99998
+## prob[3]  11280   0.0011982  1.0001
+## prob[4]  12423   0.0058661 0.99999
+## se[1]     3644    0.029561  1.0007
+## se[2]     9041    0.014571       1
+## sp[1]     7415 -0.00011668  1.0003
+## sp[2]     4300    0.018129  1.0006
+## deviance 10771   0.0020774  1.0008
+## 
+## Total time taken: 1.4 seconds
+results_tr_1000
+## 
+## JAGS model summary statistics from 100000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                              
+##           Lower95  Median Upper95     Mean        SD Mode       MCerr MC%ofSD
+## prev      0.24943 0.40794 0.58518  0.41417  0.090974   --   0.0027255       3
+## prob[1]   0.39321 0.42277 0.45369  0.42299  0.015572   --  0.00011107     0.7
+## prob[2]   0.18628  0.2113 0.23685  0.21148  0.012948   -- 0.000090265     0.7
+## prob[3]  0.071545 0.08865 0.10654 0.088929 0.0089701   -- 0.000063428     0.7
+## prob[4]   0.24875 0.27643 0.30418   0.2766  0.014184   --   0.0001003     0.7
+## se[1]     0.75997 0.86457 0.99998  0.86872  0.071952   --   0.0014114       2
+## se[2]     0.56654 0.75136 0.98563  0.76063    0.1252   --   0.0037253       3
+## sp[1]      0.6533 0.76748  0.9753  0.78784  0.093308   --   0.0027846       3
+## sp[2]     0.82568 0.89685 0.99997   0.9013  0.051093   --  0.00099961       2
+## deviance   20.105  22.514   28.14   23.158     2.494   --    0.017784     0.7
+##                                   
+##          SSeff       AC.10    psrf
+## prev      1114     0.79272  1.0012
+## prob[1]  19657   0.0017729  1.0001
+## prob[2]  20577  -0.0013115       1
+## prob[3]  20000  0.00060739  1.0001
+## prob[4]  20000 -0.00051422 0.99996
+## se[1]     2599      0.5612  1.0013
+## se[2]     1129     0.76537  1.0002
+## sp[1]     1123     0.77586  1.0002
+## sp[2]     2613     0.56284  1.0012
+## deviance 19668  -0.0008528  1.0003
+## 
+## Total time taken: 3.4 seconds</code></pre>
+<p>Note that the posteriors have wider confidence intervals for the smaller dataset, particularly with the weakly informative (truncated) prior for test 1.</p>
+<p>With a very low prevalence:</p>
+<pre class="r"><code># Set a random seed so that the data are reproducible:
+set.seed(2021-06-28)
+
+se &lt;- c(0.9, 0.6)
+sp &lt;- c(0.95, 0.9)
+N &lt;- 1000
+prevalence &lt;- 0.1
+
+data &lt;- tibble(Status = rbinom(N, 1, prevalence)) %&gt;%
+  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %&gt;%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+
+twoXtwo &lt;- with(data, table(Test1, Test2))
+Tally &lt;- as.numeric(twoXtwo)
+
+results_lowprev &lt;- run.jags(&#39;hw_stronginf.txt&#39;, n.chains=2)
+
+# Remember to check convergence!
+# plot(results_lowprev)
+
+results_lowprev
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                                
+##           Lower95   Median  Upper95     Mean        SD Mode       MCerr MC%ofSD
+## prev     0.098283  0.14039  0.18026  0.13956  0.020858   --  0.00039672     1.9
+## prob[1]   0.71834  0.74585   0.7726  0.74571   0.01392   --  0.00013456       1
+## prob[2]  0.084483   0.1027  0.12214  0.10292 0.0096107   -- 0.000097307       1
+## prob[3]  0.066981 0.083809  0.10131 0.084077  0.008822   -- 0.000082187     0.9
+## prob[4]  0.052115 0.067009 0.083077 0.067293 0.0079002   -- 0.000066123     0.8
+## se[1]     0.85277  0.90123  0.94325  0.89956  0.023389   --  0.00023764       1
+## se[2]     0.37467  0.50077  0.66114  0.50956  0.075052   --   0.0014128     1.9
+## sp[1]      0.9183  0.94955  0.97415  0.94823    0.0144   --  0.00027954     1.9
+## sp[2]     0.88405   0.9059  0.92673  0.90563  0.010964   --   0.0001064       1
+## deviance   18.499   20.854   26.365   21.509    2.4851   --    0.025474       1
+##                                   
+##          SSeff        AC.10   psrf
+## prev      2764     0.080625 1.0008
+## prob[1]  10702     0.027662 1.0002
+## prob[2]   9755     0.028825      1
+## prob[3]  11522     0.018894 1.0002
+## prob[4]  14275 -0.000043492 1.0002
+## se[1]     9687     0.015158 1.0004
+## se[2]     2822     0.078293 1.0003
+## sp[1]     2654     0.076089 1.0005
+## sp[2]    10619     0.019223 1.0002
+## deviance  9517   7.9137e-06 1.0002
+## 
+## Total time taken: 1.5 seconds</code></pre>
+<p>The specificity for test 2 is well estimated but the sensitivity has large confidence intervals. This is because there are relatively few true positive samples from which sensitivity can be estimated. The opposite is true with high prevalence i.e. it is harder to estimate specificity.</p>
 </div>
 <div id="optional-exercise-a" class="section level2 fragile">
 <h2 class="fragile">Optional exercise A</h2>
-<p>Adapt the model so that you can specify the <code>hyper-priors</code> of the sensitivity and specificity for test 1 as data</p>
+<p>Adapt the model so that you can specify the <code>hyper-priors</code> of the sensitivity and specificity for both tests as data</p>
 <p>Now pretend that the manufacturer of the test told you that Test 1 actually has these characteristics:</p>
 <ul>
 <li>Sensitivity = 0.95 (95% CI: 0.92 - 0.98)</li>
 <li>Specificity = 0.999 (95%CI: 0.99 - 1.00)</li>
 </ul>
 <p>Re-estimate the values you would need to use for the priors</p>
-<p>Now run your adapted model using these values instead (using the original dataset with N=1000) - What effect does the change to Test 1 priors have on the posterior for Test 2? - Other than comparing to the simulation parameters (which you would not know in real life!) is there any way that you can tell the priors for test 1 are not realistic?</p>
+<p>Now run your adapted model using these values instead (using the original dataset with N=1000 and prevalence=0.5) - What effect does the change to Test 1 priors have on the posterior for Test 2? - Other than comparing to the simulation parameters (which you would not know in real life!) is there any way that you can tell the priors for test 1 are not realistic?</p>
 </div>
 <div id="optional-solution-a" class="section level2 fragile">
 <h2 class="fragile">Optional solution A</h2>
-<p>TODO</p>
-<p>Key points: - Test 2 looks worse than it is - This is hard to assess in reality other than assessing sensitivty to priors by trial and error</p>
+<p>We need two additional parameters where we fix the value in R and pass that value into JAGS as data:</p>
+<pre><code>model{
+  Tally ~ dmulti(prob, N)
+  
+  # Test1- Test2-
+    prob[1] &lt;- (prev * ((1-se[1])*(1-se[2]))) + ((1-prev) * ((sp[1])*(sp[2])))
+
+  # Test1+ Test2-
+    prob[2] &lt;- (prev * ((se[1])*(1-se[2]))) + ((1-prev) * ((1-sp[1])*(sp[2])))
+
+  # Test1- Test2+
+    prob[3] &lt;- (prev * ((1-se[1])*(se[2]))) + ((1-prev) * ((sp[1])*(1-sp[2])))
+
+  # Test1+ Test2+
+    prob[4] &lt;- (prev * ((se[1])*(se[2]))) + ((1-prev) * ((1-sp[1])*(1-sp[2])))
+
+  prev ~ dbeta(1, 1)
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+
+  #data# Tally, N, se_prior, sp_prior
+  #monitor# prev, prob, se, sp, deviance
+  #inits# prev, se, sp
+}</code></pre>
+<pre class="r"><code># Set a random seed so that the data are reproducible:
+set.seed(2021-06-28)
+
+se &lt;- c(0.9, 0.6)
+sp &lt;- c(0.95, 0.9)
+N &lt;- 1000
+prevalence &lt;- 0.5
+
+data &lt;- tibble(Status = rbinom(N, 1, prevalence)) %&gt;%
+  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %&gt;%
+  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+
+twoXtwo &lt;- with(data, table(Test1, Test2))
+Tally &lt;- as.numeric(twoXtwo)
+
+# Additional data needed for the adapted model:
+(se_prior &lt;- matrix(1, ncol=2, nrow=2))
+##      [,1] [,2]
+## [1,]    1    1
+## [2,]    1    1
+(sp_prior &lt;- matrix(1, ncol=2, nrow=2))
+##      [,1] [,2]
+## [1,]    1    1
+## [2,]    1    1
+# New priors from the manufacturer:
+#  * Sensitivity = 0.95 (95% CI: 0.92 - 0.98)
+#  * Specificity = 0.999 (95%CI: 0.99 - 1.00)
+
+PriorGen::findbeta(themedian = 0.95, percentile=0.95, percentile.value = 0.92)
+## [1] &quot;The desired Beta distribution that satisfies the specified conditions is: Beta( 183.59 9.98 )&quot;
+## [1] &quot;Here is a plot of the specified distribution.&quot;
+## [1] &quot;Descriptive statistics for this distribution are:&quot;
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.8652  0.9386  0.9497  0.9483  0.9597  0.9880 
+## [1] &quot;Verification: The percentile value 0.92 corresponds to the 0.05 th percentile&quot;
+se_prior[1,] &lt;- c(183.59, 9.98)
+TeachingDemos::hpd(qbeta, shape1=se_prior[1,1], shape2=se_prior[1,2])
+## [1] 0.9168658 0.9772920
+PriorGen::findbeta(themedian = 0.999, percentile=0.95, percentile.value = 0.99)
+## [1] &quot;The desired Beta distribution that satisfies the specified conditions is: Beta( 199.22 0.53 )&quot;
+## [1] &quot;Here is a plot of the specified distribution.&quot;
+## [1] &quot;Descriptive statistics for this distribution are:&quot;
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.9656  0.9964  0.9987  0.9973  0.9997  1.0000 
+## [1] &quot;Verification: The percentile value 0.99 corresponds to the 0.05 th percentile&quot;
+sp_prior[1,] &lt;- c(199.22, 0.53)
+TeachingDemos::hpd(qbeta, shape1=sp_prior[1,1], shape2=sp_prior[1,2])
+## [1] 0.990029 1.000000
+# Now our hyper-prior parameters look like:
+se_prior
+##        [,1] [,2]
+## [1,] 183.59 9.98
+## [2,]   1.00 1.00
+sp_prior
+##        [,1] [,2]
+## [1,] 199.22 0.53
+## [2,]   1.00 1.00
+# Re-run the model with these prirs:
+results_manufacturer &lt;- run.jags(&#39;hw_hyperprior.txt&#39;, n.chains=2)
+
+# Remember to check convergence!
+# plot(results_manufacturer)
+
+results_manufacturer
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                               
+##           Lower95   Median Upper95     Mean        SD Mode       MCerr MC%ofSD
+## prev      0.47688  0.51312 0.55045  0.51366  0.018932   --  0.00022391     1.2
+## prob[1]    0.3933   0.4244 0.45429  0.42438   0.01552   --  0.00013461     0.9
+## prob[2]   0.18481   0.2099 0.23515  0.21009  0.012859   --  0.00011844     0.9
+## prob[3]  0.070412 0.087428 0.10554 0.087681 0.0089944   -- 0.000083081     0.9
+## prob[4]   0.24935  0.27783 0.30501  0.27785   0.01418   --  0.00012638     0.9
+## se[1]      0.9148  0.94947 0.97642  0.94776  0.016189   --  0.00021953     1.4
+## se[2]     0.52688  0.57054 0.61523  0.57052  0.022597   --  0.00020834     0.9
+## sp[1]     0.99051  0.99874       1  0.99743 0.0035048   --   0.0000914     2.6
+## sp[2]     0.81326  0.85115 0.88933  0.85118  0.019536   --  0.00022398     1.1
+## deviance   20.103   22.481  27.934   23.111    2.4386   --    0.024916       1
+##                                   
+##          SSeff       AC.10    psrf
+## prev      7149 -0.00096874  1.0001
+## prob[1]  13293  -0.0057191  1.0001
+## prob[2]  11788  -0.0024919  1.0002
+## prob[3]  11720   0.0069007 0.99996
+## prob[4]  12589    0.002464  1.0001
+## se[1]     5438   0.0041586 0.99999
+## se[2]    11764   0.0017221  1.0002
+## sp[1]     1470      0.2296  1.0001
+## sp[2]     7608   0.0013814 0.99998
+## deviance  9579  -0.0051379  1.0001
+## 
+## Total time taken: 1.6 seconds</code></pre>
+<p>Note: you might see some warnings like <code>Warning in if (class(temp) == &quot;function&quot;) {: the condition has length &gt; 1 and only the first element will be used</code> - this is due to a bug in runjags that will be fixed soon!</p>
+<p>Compared to the earlier results (results_si_1000), the sensitivity and specificty of test 1 are estimated to be higher, but the sensitivity of test 2 is estimated to be lower. Having too much confidence in the performance of one test will always make all of the other tests look worse! So remember to carefully assess the studies on which you base your priors: if these come from laboratory validation exercises (which typically involve spiked samples with extremely high concentrations of the target vs completely clean/sterile negative controls) then this may not be a realistic estimation of the sensitivity or specificity in the field.</p>
+<p>In general the best way to assess the effect of your priors is by sensitivity analysis: change the priors slightly (for example make them less informative) and see if your posterior changes substantially. In this case we can see that the stronger priors for test 1 move the estimates for test 2 substantially, so we would have to be extremely sure that these priors are correct in order to believe the model results.</p>
 </div>
 <div id="summary" class="section level2 fragile">
 <h2 class="fragile">Summary</h2>
@@ -696,6 +1036,7 @@ results
 <li>They typically exhibit high autocorrelation</li>
 <li>They may not converge</li>
 <li>Need a larger sample for the same effective sample size</li>
+<li>In general, models with worse identifiability perform worse in this regard!</li>
 </ul></li>
 <li>More informative priors for one test will
 <ul>
