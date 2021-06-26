@@ -373,14 +373,14 @@ This is useful to check that we can recover parameter values!
 # Set a random seed so that the data are reproducible:
 set.seed(2021-06-28)
 
-se <- c(0.9, 0.6)
-sp <- c(0.95, 0.9)
+sensitivity <- c(0.9, 0.6)
+specificity <- c(0.95, 0.9)
 N <- 1000
 prevalence <- 0.5
 
 data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
-  mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
-  mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
 
 twoXtwo <- with(data, table(Test1, Test2))
 Tally <- as.numeric(twoXtwo)

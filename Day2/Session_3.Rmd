@@ -82,7 +82,7 @@ cleanup <- character(0)
   * BUT be wary of assumptions regarding constant sensitivity/specificity across populations with very different types of infections
 
 
-## Independent intercepts for populations
+## Different prevalence in different populations
 
 ```{r eval=FALSE}
 model{
@@ -95,32 +95,6 @@ model{
     prev[p] ~ dbeta(1, 1)
   }
 
-  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
-  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
-
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
-  #monitor# prev, prob, se, sp
-  #inits# prev, se, sp
-}
-```
-
-## Random intercepts for a larger number of populations
-
-```{r eval=FALSE}
-model{
-  for(p in 1:Populations){
-    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
-    ## snip ##    
-    
-	  logit(prev[p]) <- intercept + population_effect[p]
-	  population_effect[p] ~ dnorm(0, tau)
-  }
-
-  tau ~ dgamma(0.01, 0.01)
-  intercept ~ dnorm(0, 0.33)
-  
   se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
   sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
@@ -155,7 +129,23 @@ model{
 . . .
 
 - A small experimentally infected group MAY be helpful but it is often dangerous to assume that sensitivity is consistent!
-  
+
+## Initial values
+
+We have to be careful to make sure that the length of initial values for `prev` in each chain is equal to the number of populations
+
+For example with 5 populations we need:
+
+```{r}
+prev <- list(chain1=c(0.1, 0.1, 0.1, 0.9, 0.9), chain2=c(0.9, 0.9, 0.9, 0.1, 0.1))
+```
+
+. . .
+
+The values you choose for different populations in the same chain can be the same - just make sure you pick different values for the same population between chains (i.e. *over-dispersed* initial values)
+
+*Note: specifying your own initial values is technically optional with JAGS, but it is always a good idea (for now at least)!!!*
+
 ## Incorporating populations with known prevalence
 
 Up to now prevalence has been a parameter, but it can also be (partially) observed:
@@ -165,7 +155,7 @@ model{
   for(p in 1:Populations){
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
     # Test1- Test2- Pop1
-	  prob[1, p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+	  prob[1, p] <- (prev[p] * ((1-sensitivity[1])*(1-sensitivity[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
     ## snip ##
 	  
     prev[p] ~ dbeta(1, 1)
@@ -195,9 +185,52 @@ prev
 But you also need to account for this in the initial values:
 
 ```{r}
-prev <- list(chain1=c(NA, 0.2, 0.4, 0.6, 0.8), chain2=c(NA, 0.8, 0.6, 0.4, 0.2))
+prev <- list(chain1=c(NA, 0.1, 0.1, 0.9, 0.9), chain2=c(NA, 0.9, 0.9, 0.1, 0.1))
 ```
 
+Note:  we now have two definitions of `prev` in R!
+
+## Data and initial value lists
+
+There are actually multiple ways to specify data and initial values to runjags, including via the `data` and `inits` arguments
+
+We will use these to keep separate lists of data and initial values (these could also be data frames, or environments)
+
+```{r eval=FALSE}
+data <- list(
+  Tally = Tally,
+  TotalTests = apply(Tally, 2, sum),
+  Populations = dim(Tally, 2),
+  prev = rep(NA, Populations),
+  se_prior = matrix(1, ncol=2, nrow=2),
+  sp_prior = matrix(1, ncol=2, nrow=2)
+)
+data$prev[1] <- 0
+```
+
+- - -
+
+
+```{r eval=FALSE}
+inits <- list(
+  chain1 = list(
+    prev = c(NA, 0.1, 0.1, 0.9, 0.9),
+    se = c(0.5, 0.99),
+    sp = c(0.5, 0.99)
+  ),
+  chain2 = list(
+    prev = c(NA, 0.9, 0.9, 0.1, 0.1),
+    se = c(0.99, 0.5),
+    sp = c(0.99, 0.5)
+  )
+)
+
+results <- run.jags(..., data = data, inits = inits)
+```
+
+. . .
+
+See the help file for `?run.jags` for more details
 
 ## Other runjags options
 
@@ -234,7 +267,7 @@ results <- run.jags(model_string, n.chains=2)
 
 ## Setting the RNG seed
 
-If we want to get numerically replicable results we need to add `.RNG.name` and `.RNG.seed` to the initial values, and an additional `#modules#` lecuyer hook to our basicjags.bug file:
+If we want to get numerically replicable results we need to add `.RNG.name` and `.RNG.seed` to the initial values, and an additional `#modules#` lecuyer hook to our model definition:
 
 ```{r, eval=FALSE}
 model{
@@ -248,10 +281,12 @@ model{
 }
 ```
 
+Then we can propogate R's RNG to JAGS like so:
 
 ```{r, eval=FALSE}
+set.seed(2021-06-29)
 .RNG.name <- "lecuyer::RngStream"
-.RNG.seed <- list(chain1=1, chain2=2)
+.RNG.seed <- list(chain1=sample.int(1e6, 1), chain2=sample.int(1e6, 1)))
 results <- run.jags(model_string, n.chains=2)
 ```
 
@@ -276,32 +311,497 @@ results <- run.jags(model_string, n.chains=2)
 Simulate data using multiple populations.  You can use this R code:
 
 ```{r}
+# Set a random seed so that the data are reproducible:
+set.seed(2021-06-29)
 
+sensitivity <- c(0.9, 0.6)
+specificity <- c(0.95, 0.9)
+N <- 1000
+
+# Change the number of populations here:
+Populations <- 5
+# Change the variation in prevalence here:
+(prevalence <- runif(Populations, min=0.1, max=0.9))
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
+
+(twoXtwoXpop <- with(data, table(Test1, Test2, Population)))
+(Tally <- matrix(twoXtwoXpop, ncol=Populations))
+(TotalTests <- apply(Tally, 2, sum))
 ```
 
+Start with 5 populations and analyse the data using the independent prevalence model.  Set a RNG seed so that the results are reproducible exactly.
 
-## Exercise plan TODO {.fragile}
+Now try with 1, 3, and 10 populations
 
-- Simulate data with different numbers of populations
-  - 1 vs 2 vs 3 vs 5 vs 10 populations
-  - Widely varying vs very similar prevalence
-  - See how it impacts the width of the CI for Se/Sp
+  - How does this affect the confidence intervals for the diagnostic test parameters?
 
-- Give them a single group dataset with covariates of age and sex, where prevalence depends on age
-  - Let them work out that they can use different age groups to define populations
-  - Show them what happens if they use one of the test results to define populations
+Now change the simulated prevalence so that it varies between 0.4-0.6 rather than 0.1-0.9
 
-- Give them another dataset including:
-  - Experimentally infected group where the Se is higher in that group
-  - Known free group with consistent Sp
-  - One larger group with unknown status
-  - Posterior will change if including/excluding the experimentally infected group
+  - How does this affect the confidence intervals for the diagnostic test parameters?
 
-Optional:
 
-- Use fixed vs random effects of population prevalence
-  - For populations with small/varying population size
-  - For large populations
+## Solution 1 {.fragile}
+
+This is what the model should look like:
+
+
+```{r echo=FALSE}
+multipop <- "
+model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+  
+    # Test1- Test2-
+	  prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+
+    # Test1+ Test2-
+  	prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
+
+    # Test1- Test2+
+  	prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
+
+  	 # Test1+ Test2+
+	  prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+	  
+    prev[p] ~ dbeta(1, 1)
+  }
+
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #monitor# prev, se, sp
+  #inits# prev, se, sp, .RNG.name, .RNG.seed
+  #module# lecuyer
+}"
+cat(multipop)
+cat(multipop, file="multipopulation.txt")
+cleanup <- c(cleanup, "multipopulation.txt")
+```
+
+[Using `se_prior` and `sp_prior` is optional: you can also put the priors directly into the model code]
+
+Here is the R code to run the model:
+
+```{r}
+# Set a random seed in R:
+set.seed(2021-06-29)
+
+# Make sure this is passed to JAGS:
+.RNG.name <- "lecuyer::RngStream"
+.RNG.seed <- list(chain1=sample.int(1e6, 1), chain2=sample.int(1e6, 1))
+
+# Set up the se_prior and sp_prior variables (optional):
+se_prior <- matrix(1, nrow=2, ncol=2)
+sp_prior <- matrix(1, nrow=2, ncol=2)
+
+# Set up initial values for 5 populations:
+se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+prev <- list(chain1=c(0.1, 0.1, 0.1, 0.9, 0.9), chain2=c(0.9, 0.9, 0.9, 0.1, 0.1))
+
+# And run the model:
+results <- run.jags("multipopulation.txt", n.chains=2)
+
+# Remember to check convergence!
+# plot(results)
+
+results
+```
+
+To change the number of populations and range of prevalence you just need to modify the simulation code, for example 3 populations with prevalence between 0.4-0.6 can be obtained using:
+
+```{r}
+# Change the number of populations here:
+Populations <- 3
+# Change the variation in prevalence here:
+(prevalence <- runif(Populations, min=0.4, max=0.6))
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
+
+(twoXtwoXpop <- with(data, table(Test1, Test2, Population)))
+(Tally <- matrix(twoXtwoXpop, ncol=Populations))
+(TotalTests <- apply(Tally, 2, sum))
+
+# Adjust initial values for 3 populations:
+se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+prev <- list(chain1=c(0.1, 0.1, 0.9), chain2=c(0.9, 0.9, 0.1))
+
+# And run the model:
+results_3p <- run.jags("multipopulation.txt", n.chains=2)
+
+# Remember to check convergence!
+# plot(results_3p)
+
+results_3p
+```
+
+As a general rule, the more populations you have, and the more the prevalence varies between them, the better.  However, this is conditional on having a consistent sensitivity and specificity between your populations!!!
+
+## Exercise 2 {.fragile}
+
+For this exercise you will need to use the "multi_pop_data.Rdata" file under "Day2" on the GitHub repository.  You should just be able to load this by double clicking on it, otherwise you can choose `Session` and `Load Workspace` in RStudio and select the file to load.  You should then be able to look at the data:
+
+```{r echo=FALSE}
+set.seed(2021-06-29)
+
+N <- 1000
+Populations <- 3
+se1 <- c(0.8, 0.8, 0.95)
+sp1 <- c(0.95, 0.95, 0.99)
+se2 <- c(0.6, 0.6, 0.9)
+sp2 <- c(0.9, 0.9, 0.99)
+prevalence <- c(0, 0.33, 1)
+
+multi_pop_data <- tibble(Population = sample(seq_len(Populations), N, prob=c(0.1,0.8,0.1), replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, se1[Population]*Status + (1-sp1[Population])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, se1[Population]*Status + (1-sp2[Population])*(1-Status))) %>%
+  mutate(Population = factor(Population, levels=1:3, labels=c("CertifiedFree", "NaturalInfection", "ExperimentalInfection"))) %>%
+  select(-Status) %>%
+  arrange(Population)
+
+save(multi_pop_data, file="multi_pop_data.Rdata")
+```
+
+```{r}
+multi_pop_data
+```
+There are 3 populations:
+
+  - The CertifiedFree population is individuals that are known to be free of disease due to their geographical location. You can assume that none of these animals are truly infected.
+  
+  - The NaturalInfection population is the main population of interest, where some animals will be infected and some will be uninfected.
+  
+  - The ExperimentalInfection population have been experimentally infected with an extremely large infectious dose of the causative agent of your disease, whilst being kept isolated from any other possible disease. You can assume that all of these individuals are infected.
+  
+Fit a 2-test 3-population model to this data using minimally informative Beta(1,1) priors.  Interpret the results.  How well is sensitivity and specificity estimated relative to the other datsaets we have looked at?  Why might there be a difference here?
+
+Now exclude individuals in the ExperimentalInfection population and re-run the model.  Do the estimated results change?  Why might that be?
+
+## Solution 2 {.fragile}
+
+First we need to make a minor change to the model to include #data# prev - only 1 line of this model has changed compared to before:
+
+```{r echo=FALSE}
+multipop <- "
+model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+  
+    # Test1- Test2-
+	  prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+
+    # Test1+ Test2-
+  	prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
+
+    # Test1- Test2+
+  	prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
+
+  	 # Test1+ Test2+
+	  prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+	  
+    prev[p] ~ dbeta(1, 1)
+  }
+
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior, prev
+  #monitor# prev, se, sp
+  #inits# prev, se, sp, .RNG.name, .RNG.seed
+  #module# lecuyer
+}"
+cat(multipop)
+cat(multipop, file="multipopulation_fixprev.txt")
+cleanup <- c(cleanup, "multipopulation_fixprev.txt")
+```
+
+Then we need to summarise the data in the format needed by the model.  This is the same process as for the simulated data, except that we will use a list to keep our data separate from our initial values:
+
+```{r}
+(twoXtwoXpop <- with(multi_pop_data, table(Test1, Test2, Population)))
+(Tally <- matrix(twoXtwoXpop, ncol=dim(twoXtwoXpop)[3]))
+
+data <- list(
+  Tally = Tally,
+  TotalTests = apply(Tally, 2, sum),
+  Populations = dim(twoXtwoXpop)[3],
+  prev = rep(NA, dim(twoXtwoXpop)[3]),
+  se_prior = matrix(1, ncol=2, nrow=2),
+  sp_prior = matrix(1, ncol=2, nrow=2)
+)
+```
+
+Then we need to add data corresponding to the known prevalence in the first and third population, but leave it missing in the second:
+
+```{r}
+data$prev <- c(0.0, NA, 1.0)
+# This is just for illustration - names are ignored by JAGS:
+names(data$prev) <- levels(multi_pop_data$Population)
+data$prev
+```
+
+Then we can set appropriate initial values and run the model:
+
+```{r}
+inits <- list(
+  chain1 = list(
+    prev = c(NA, 0.1, NA),
+    se = c(0.5, 0.99),
+    sp = c(0.5, 0.99)
+  ),
+  chain2 = list(
+    prev = c(NA, 0.9, NA),
+    se = c(0.99, 0.5),
+    sp = c(0.99, 0.5)
+  )
+)
+
+results_3p <- run.jags("multipopulation_fixprev.txt", n.chains=2, data = data, inits = inits)
+
+# Note: this is only commented out to save space in the exercise file!
+# plot(results_3p)
+# check convergence and effective sample size, and then interpret results:
+results_3p
+```
+
+The 95% CI for sensitivity and specificity of both tests are extremely narrow compared to the previous dataset.  This is because of the 1st and 3rd population:  because we know the prevalence is 0 or 1, the latent state is no longer latent so the model is *much* better identified. This has a knock-on effect to population 2 because we assume the sensitivty and specificity are the same.
+
+Re-running the model for the first 2 populations is quite straightforward:
+
+```{r}
+(twoXtwoXpop <- with(multi_pop_data, table(Test1, Test2, Population, exclude="ExperimentalInfection")))
+
+Populations <- dim(twoXtwoXpop)[3]
+stopifnot(Populations==2)
+
+(Tally <- matrix(twoXtwoXpop, ncol=Populations))
+
+data <- list(
+  Tally = Tally,
+  TotalTests = apply(Tally, 2, sum),
+  Populations = dim(twoXtwoXpop)[3],
+  prev = c(0.0, NA),
+  se_prior = matrix(1, ncol=2, nrow=2),
+  sp_prior = matrix(1, ncol=2, nrow=2)
+)
+
+inits <- list(
+  chain1 = list(
+    prev = c(NA, 0.1),
+    se = c(0.5, 0.99),
+    sp = c(0.5, 0.99)
+  ),
+  chain2 = list(
+    prev = c(NA, 0.9),
+    se = c(0.99, 0.5),
+    sp = c(0.99, 0.5)
+  )
+)
+
+results_2p <- run.jags("multipopulation_fixprev.txt", n.chains=2, data = data, inits = inits)
+
+# Note: this is only commented out to save space in the exercise file!
+# plot(results_2p)
+# check convergence and effective sample size, and then interpret results:
+results_2p
+```
+
+The sensitivity of both tests is now much more poorly estimated because we don't have a known positive population on which to base this estimate.  Furthermore, the posteriors have generally shifted downwards compared to the 3 population model.  We can illustrate this using a graph:
+
+```{r}
+pop2 <- combine.mcmc(results_2p, vars="se", return.samples = 10000)
+pop3 <- combine.mcmc(results_3p, vars="se", return.samples = 10000)
+
+bind_rows(
+  tibble(Model = "TwoPopulation", Test1 = pop2[,"se[1]"], Test2 = pop2[,"se[2]"]),
+  tibble(Model = "ThreePopulation", Test1 = pop3[,"se[1]"], Test2 = pop3[,"se[2]"])
+) %>%
+  pivot_longer(c(Test1, Test2), names_to = "Test", values_to = "Estimate") %>%
+  ggplot() +
+  aes(x = Estimate, col = Model) +
+  geom_density() +
+  facet_wrap( ~ Test)
+```
+We can conclude that there is most likely something different about the sensitivity in the experimentally infected individuals.  This might have something to do with them being given an extremely large infectious dose that does not even vaguely represent the real world...
+
+We can also look at the specificity:
+
+```{r}
+pop2 <- combine.mcmc(results_2p, vars="sp", return.samples = 10000)
+pop3 <- combine.mcmc(results_3p, vars="sp", return.samples = 10000)
+
+bind_rows(
+  tibble(Model = "TwoPopulation", Test1 = pop2[,"sp[1]"], Test2 = pop2[,"sp[2]"]),
+  tibble(Model = "ThreePopulation", Test1 = pop3[,"sp[1]"], Test2 = pop3[,"sp[2]"])
+) %>%
+  pivot_longer(c(Test1, Test2), names_to = "Test", values_to = "Estimate") %>%
+  ggplot() +
+  aes(x = Estimate, col = Model) +
+  geom_density() +
+  facet_wrap( ~ Test)
+```
+
+It is harder to spot this from the summary results, but there also seems to be a shift downwards here when excluding the experimentally infected individuals.  Maybe something to do with them being free of other pathogens with which the test might possibly cross-react?
+
+## Optional exercise A {.fragile}
+
+Simulate data for a much larger number of populations using the code from exercise 1
+
+  - Start with 100 populations and a total N of 1000 (i.e. 10 individuals per population, on average)
+  - Fit the model assuming independent prevalence
+  - What do you notice about the parameter estimates compared to having 5 populations with the same total N?
+
+Note:  runjags will not provide summary statistics if you have >50 monitored variables, but you can ask for summary statistics for specific variables like so:
+
+```{r eval=FALSE}
+summary(results, vars="se[1]")
+summary(results, vars="se")
+# Or using partial matching for any variable beginning with s:
+summary(results, vars="^s")
+
+# This argument can be vectorised, allows ranges to be specified, and also works with plots:
+plot(results, vars=c("^s", "prev[1:5]"))
+```
+
+Alternatively, if you really want all summary statistics to be calculated automatically you can set:
+
+```{r}
+runjags.options(force.summary=TRUE)
+```
+
+## Optional exercise B {.fragile}
+
+Note:  this exercise is a bit tricky, and is also related to topic 7.  So if you don't get it finished today you can come back to it on the last day!
+
+The problem with exercise A is that there are too many populations to allow the prevalence to be completely independent between them.  This can be solved in one of two ways:
+
+  1. Constrain the variation between populations by fitting the prevalences to a single distribution, and estimate the mean and variance of this distribution. This is analogous to fitting a random effect of population rather than a fixed effect of population.
+  1. Fit a random effect of population plus predictor variables to the population-level prevalence to explain some of the variation.
+  
+Note:  this has clear parallels with a generalised linear model - we will return to this idea for topic 7.
+
+In this case we don't have any explanatory variables, but we can fit a random effect of population to constrain the prevalence parameters.  See if you can adapt the multi-population model to do this.  Take inspiration from how you might specify a logistic regression with random effect of population.
+
+Hint:  the following JAGS code might be useful:
+
+```{r eval=FALSE}
+logit(prev[p]) <- intercept + population_effect[p]
+population_effect[p] ~ dnorm(0, tau)
+```
+
+This introduces the normal distribution, which is parameterised using mean and precision (= inverse variance) in JAGS.  For more information on distributions that are available in JAGS see the jags_user_manual provided in the GitHub repo.
+
+## Solution B {.fragile}
+
+This was quite tricky, so if you managed to get close to the solution without cheating then you have done well!
+
+```{r}
+random_model <- "
+model{
+  for(p in 1:Populations){
+    Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
+
+    # Test1- Test2-
+	  prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+
+    # Test1+ Test2-
+  	prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
+
+    # Test1- Test2+
+  	prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
+
+  	 # Test1+ Test2+
+	  prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+    
+	  logit(prev[p]) <- intercept + population_effect[p]
+	  population_effect[p] ~ dnorm(0, tau)
+  }
+
+  # Priors for the intercept and precision of the random effect:
+  intercept ~ dnorm(0, 0.33)
+  tau ~ dgamma(0.01, 0.01)
+  
+  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+
+  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #monitor# prev[1], se, sp, tau, intercept
+  #inits# se, sp, tau, intercept, .RNG.name, .RNG.seed
+  #modules# lecuyer
+}"
+cat(random_model)
+cat(random_model, file="multirandom.txt")
+cleanup <- c(cleanup, "multirandom.txt")
+```
+
+Then we can simulate the data:
+
+```{r}
+# Set a random seed so that the data are reproducible:
+set.seed(2021-06-29)
+
+sensitivity <- c(0.9, 0.6)
+specificity <- c(0.95, 0.9)
+N <- 1000
+
+Populations <- 100
+prevalence <- runif(Populations, min=0.1, max=0.9)
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
+
+twoXtwoXpop <- with(data, table(Test1, Test2, Population))
+Tally <- matrix(twoXtwoXpop, ncol=Populations)
+TotalTests <- apply(Tally, 2, sum)
+```
+
+You will also need to set initial values for tau and the intercept (but not for prev, as we take care of this via the intercept):
+
+```{r}
+se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+tau <- list(chain1 = 0.01, chain2 = 100)
+intercept <- list(chain1 = -4, chain2 = 4)
+set.seed(2021-06-29)
+.RNG.name <- "lecuyer::RngStream"
+.RNG.seed <- list(chain1=sample.int(1e6, 1), chain2=sample.int(1e6, 1))
+```
+
+Remember that the intercept is on the logit scale, so -4 corresponds to a prevalence of `r plogis(-4)` and 4 corresponds to a prevalence of `r plogis(4)`. These are quite widely over-dispersed!
+
+The code to run the model is very similar to before:
+
+```{r}
+results_random <- run.jags("multirandom.txt", n.chains=2, method="parallel")
+
+# Note: this is only commented out to save space in the exercise file!
+# plot(results_random)
+# check convergence and effective sample size, and then interpret results:
+results_random
+```
+
+These results give much narrower confidence intervals for the sensitivity and specificity than when assuming that the prevalences are independent.  The downside is that we must assume that the distribution of prevalence is normal (on the logit scale) between populations.  In this case we know that they are simulated from a uniform distribution (on the prevalence scale) so this assumption does not hold.  But it may still be reasonable to make this assumption as long as we can assume that the prevalences come from a single distribution, even if it might not (quite) be normal.  It would be much more dangerous to do this if we have a single outlier population with a markedly different prevalence than the others.
+
+Note: when fitting a random effect we might not be interested in the estimates for each population as much as the overall intercept and precision (tau).  But there is nothing to stop us also extracting estimates for a specific population - I have done this for the first population for illustration.
+
 
 `r if(params$presentation) {"\\end{comment}"}`
 

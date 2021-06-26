@@ -56,8 +56,6 @@ knitr::knit_hooks$set(document = space_collapse)
 cleanup <- character(0)
 ```
 
-# Session 5:  How to interpret the latent class
-
 ## Recap
 
 - Adding more populations and more tests to a Hui-Walter model is technically easy
@@ -66,6 +64,8 @@ cleanup <- character(0)
 - Verifying that the assumptions you are making are correct is harder
   - The sensitivity and specificity must be consistent across populations
   - Pairwise correlation between tests should be accounted for (with >2 tests)
+
+# How to interpret the latent class
 
 
 ## What exactly is our latent class?
@@ -80,7 +80,7 @@ Homework (reminder):  think about what exactly the latent class is in these situ
   
 . . .
 
-1. Two antibody tests 
+2. Two antibody tests 
 
 . . .
 
@@ -93,10 +93,6 @@ Homework (reminder):  think about what exactly the latent class is in these situ
   * Independent of each other conditional on the latent state
   * But the latent state is NOT always *disease*
 
-. . .
-
-- i.e. we're pulling **something** out of a hat, and deciding to call it a rabbit
-
 
 ## A hierarchy of latent states
 
@@ -107,232 +103,70 @@ Homework (reminder):  think about what exactly the latent class is in these situ
 - Sometimes we have multiple tests that are detecting a similar thing
   
   - For example:  two antibody tests and one antigen test
-  - The antibody tests will be correlated
+    - The antibody tests will be correlated
   
+. . .
+
+- Sometimes we have multiple tests on the same site / sample:
+  
+  - For example:  two throat swab tests vs a nasal swab test
+    - The throat swab tests will be correlated
+
 . . .
 
 - Or even three antibody tests where two are primed to detect the same thing, and one has a different target!
   
   - In this case all three tests are correlated, but two are more strongly correlated
 
-## Data simulation
 
+## What is sensitivity and specificity?
 
-## Optional Exercise Code {.fragile}
+The probability of test status conditional on true disease status?
 
-```{r, eval=FALSE}
-# Probability of antibody response conditional on disease status (really bad to illustrate the point):
-se_antibody <- 0.5
-sp_antibody <- 0.75
-N <- 100
-# Otherwise the parameters are as before
+. . .
 
-# True latent infection status as before:
-true <- rbinom(N, 1, prevalence[Group])
+Or the probability of test status conditional on the latent state?
 
-# Latent class of antibody response conditional on the true status:
-antibody <- rbinom(N, 1, se_antibody*true + (1-sp_antibody)*(1-true))
+. . .
 
-# Simulate test results for test 1 conditional on antibody status:
-test1 <- rbinom(N, 1, se1*antibody + (1-sp1)*(1-antibody))
-# etc
+So is the latent state the same as the true disease state?
 
-# Note that the overall sensitivity and specificity of the tests needs to be corrected for the antibody positive step:
-overall_se1 <- se_antibody*se1 + (1-se_antibody)*(1-sp1)
-overall_sp1 <- sp_antibody*sp1 + (1-sp_antibody)*(1-se1)
-# etc
-```
+. . .
 
+Important quote:
 
-## Optional Solution {.fragile}
+"Latent class models involve pulling **something** out of a hat, and deciding to call it a rabbit"
 
-
-```{r, results='hide'}
-# Parameter values to simulate:
-N <- 200
-se1 <- 0.8
-sp1 <- 0.95
-se2 <- 0.9
-sp2 <- 0.99
-se3 <- 0.95
-sp3 <- 0.95
-
-# Probability of antibody response conditional on disease status (really bad to illustrate the point):
-se_antibody <- 0.5
-sp_antibody <- 0.75
-
-Populations <- 2
-prevalence <- c(0.25,0.75)
-Group <- sample(1:Populations, N, replace=TRUE)
-
-# Ensure replicable data:
-set.seed(2020-02-18)
-
-# True latent infection status as before:
-true <- rbinom(N, 1, prevalence[Group])
-
-# Latent class of antibody response conditional on the true status:
-antibody <- rbinom(N, 1, se_antibody*true + (1-sp_antibody)*(1-true))
-
-# Simulate test results for all tests conditional on antibody status:
-test1 <- rbinom(N, 1, se1*antibody + (1-sp1)*(1-antibody))
-test2 <- rbinom(N, 1, se2*antibody + (1-sp2)*(1-antibody))
-test3 <- rbinom(N, 1, se3*antibody + (1-sp3)*(1-antibody))
-
-# Note that the overall sensitivity and specificity of the tests needs to be corrected for the antibody positive step:
-overall_se1 <- se_antibody*se1 + (1-se_antibody)*(1-sp1)
-overall_sp1 <- sp_antibody*sp1 + (1-sp_antibody)*(1-se1)
-
-overall_se2 <- se_antibody*se2 + (1-se_antibody)*(1-sp2)
-overall_sp2 <- sp_antibody*sp2 + (1-sp_antibody)*(1-se2)
-
-overall_se3 <- se_antibody*se3 + (1-se_antibody)*(1-sp3)
-overall_sp3 <- sp_antibody*sp3 + (1-sp_antibody)*(1-se3)
-
-simdata <- data.frame(Population=factor(Group), Test1=test1, Test2=test2, Test3=test3)
-
-template_huiwalter(simdata[,c('Population','Test1','Test2','Test3')], outfile='auto3abthw.bug')
-
-results <- run.jags('auto3abthw.bug')
-
-```
-
-Now check the results:
-
-```{r}
-results
-```
-
-We do a horrible job of estimating prevalence in the second population:
-
-```{r}
-prevalence
-```
-
-And the test sensitivity/specificity estimates are nowhere near the overall sensitivity/specificity after correcting for antibody status:
-
-```{r}
-overall_se1
-overall_se2
-overall_se3
-overall_sp1
-overall_sp2
-overall_sp3
-```
-
-But they are close to the sensitivity/specificity values that are conditional on the antibody status:
-
-```{r}
-se1
-se2
-se3
-sp1
-sp2
-sp3
-```
-
-So our model is effectively estimating a latent condition of antibody status, and not a latent condition of true positive status - i.e. the thing that we have pulled out of the hat is not the rabbit that we were hoping for...
-
-`r if(params$presentation) {"\\end{comment}"}`
-
-
-## What is sensitivity and specificity
-
-TODO:  show how overall Se and Sp relates to probability of test positive given antibody response etc
-
-
-## Alternative model formulation
-
-TODO: change to explicit serial Disease -> Antibody -> Test etc
-
-Note that autocorrelation is terrible
-
-```{r include=FALSE}
-glmhw_definition <- c("model{
-
-  for(i in 1:N){
-    Status[i] ~ dcat(prob[i, ])
-  
-	  prob[i,1] <- (prev[i] * ((1-se[1])*(1-se[2]))) + 
-	              ((1-prev[i]) * ((sp[1])*(sp[2])))
-	  prob[i,2] <- (prev[i] * ((se[1])*(1-se[2]))) + 
-	              ((1-prev[i]) * ((1-sp[1])*(sp[2])))
-	  prob[i,3] <- (prev[i] * ((1-se[1])*(se[2]))) + 
-	              ((1-prev[i]) * ((sp[1])*(1-sp[2])))
-	  prob[i,4] <- (prev[i] * ((se[1])*(se[2]))) + 
-	              ((1-prev[i]) * ((1-sp[1])*(1-sp[2])))
-	  
-	  logit(prev[i]) <- intercept + population_effect[Population[i]]
-  }
-", "
-  intercept ~ dnorm(0, 0.33)
-  population_effect[1] <- 0
-  for(p in 2:Pops){
-    population_effect[p] ~ dnorm(0, 0.1)
-  }
-  se[1] ~ dbeta(1, 1)T(1-sp[1], )
-  sp[1] ~ dbeta(1, 1)
-  se[2] ~ dbeta(1, 1)T(1-sp[2], )
-  sp[2] ~ dbeta(1, 1)
-
-  #data# Status, N, Population, Pops
-  #monitor# intercept, population_effect, se, sp
-  #inits# intercept, population_effect, se, sp
-}
-")
-cat(glmhw_definition, sep='', file='glm_hw.bug')
-```
-
-
-```{r comment='', echo=FALSE}
-cat(glmhw_definition[1], sep='\n')
-```
-
----
-
-```{r comment='', echo=FALSE}
-cat(glmhw_definition[2], sep='\n')
-```
-
----
-
-- The main difference is the prior for prevalence in each population
-
-- We also need to give initial values for `intercept` and `population_effect` rather than `prev`, and tell `run.jags` the data frame from which to extract the data (except `N` and `Pops`):
-
-```{r, results='hide', eval=FALSE}
-intercept <- list(chain1=-1, chain2=1)
-population_effect <- list(chain1=c(NA, 1, -1), chain2=c(NA, -1, 1))
-se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
-sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
-
-simdata$Status <- with(simdata, factor(interaction(Test1, Test2), levels=c('0.0','1.0','0.1','1.1')))
-N <- nrow(simdata)
-Pops <- length(levels(simdata$Population))
-glm_results <- run.jags('glm_hw.bug', n.chains=2, data=simdata)
-```
+  - Some Danish guy
 
 
 ## Publication of your results
 
 STARD-BLCM:  A helpful structure to ensure that papers contain all necessary information
+  
+  - You should follow this and refer to it in your articles!
+
+. . .
 
 If you use the software, please cite JAGS:
 
-Plummer, M. (2003). JAGS : A Program for Analysis of Bayesian Graphical Models Using Gibbs Sampling JAGS : Just Another Gibbs Sampler. Proceedings of the 3rd International Workshop on Distributed Statistical Computing (DSC 2003), March 20–22,Vienna, Austria. ISSN 1609-395X. https://doi.org/10.1.1.13.3406
+  - Plummer, M. (2003). JAGS : A Program for Analysis of Bayesian Graphical Models Using Gibbs Sampling JAGS : Just Another Gibbs Sampler. Proceedings of the 3rd International Workshop on Distributed Statistical Computing (DSC 2003), March 20–22,Vienna, Austria. ISSN 1609-395X. https://doi.org/10.1.1.13.3406
 
-R:
+---
+
+And R:
 
 ```{r}
 citation()
 ```
 
-and runjags:
+---
+
+And runjags:
 
 ```{r}
 citation("runjags")
 ```
-
 
 # Discussion session 5
 
@@ -346,11 +180,11 @@ citation("runjags")
 
 ## Exercise
 
-1. Read the STARD-BLCM guidelines, checklist, and examples documents
+1. Read the STARD-BLCM guidelines, checklist, and examples documents.  Make sure you understand what the documents ask for.
 
-1. Read the `Diagnosing diagnostic tests` paper
+1. Read the *Diagnosing diagnostic tests* paper provided for Day 3, and try to understand how the issues discussed in this paper relate to what we have discussed yesterday and today.
 
-1. Be ready with questions for the group discussion!
+1. Be ready with questions for the group discussion! You get several bonus points if you can ask a question that the paper authors are unable to answer.
 
 
 ## Summary {.fragile}

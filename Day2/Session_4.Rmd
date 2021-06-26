@@ -66,50 +66,61 @@ Using a latent class model each new test adds new information - so we should ana
 
 ## Simulating data
 
-Simulating data using an arbitrary number of independent tests is quite straightforward.
-
-TODO: clean up R code
+Simulating data using an arbitrary number of independent tests is quite straightforward:
 
 ```{r}
 # Parameter values to simulate:
 N <- 200
-se <- c(0.8, 0.9, 0.95)
-sp <- c(0.95, 0.99, 0.95)
+sensitivity <- c(0.8, 0.9, 0.95)
+specificity <- c(0.95, 0.99, 0.95)
 
 Populations <- 2
-prevalence <- c(0.25,0.75)
-Group <- sample(1:Populations, N, replace=TRUE)
-```
+prevalence <- c(0.25,0.5)
 
----
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %>%
+  mutate(Test3 = rbinom(N, 1, sensitivity[3]*Status + (1-specificity[3])*(1-Status))) %>%
+  select(-Status)
 
-```{r}
-# Ensure replicable data:
-set.seed(2020-02-18)
-
-# Simulate the true latent state (which is unobserved in real life):
-true <- rbinom(N, 1, prevalence[Group])
-# Simulate test results for test 1:
-test1 <- rbinom(N, 1, se[1]*true + (1-sp[1])*(1-true))
-# Simulate test results for test 2:
-test2 <- rbinom(N, 1, se[2]*true + (1-sp[2])*(1-true))
-# Simulate test results for test 3:
-test3 <- rbinom(N, 1, se[3]*true + (1-sp[3])*(1-true))
-
-simdata <- data.frame(Population=factor(Group), Test1=test1, Test2=test2, Test3=test3)
 ```
 
 
 ## Model specification
 
-- Like for two tests, except it is now a 2x2x2 table
-  
-  * We need to take **extreme** care with multinomial tabulation
-  
+Like for two tests, except it is now a 2x2x2 table
+ 
 . . .
 
-TODO:  show equations
+```{r include=FALSE, eval=FALSE}
+template_huiwalter(data)
+cleanup <- c(cleanup, "huiwalter_model.txt")
+```
 
+```{r eval=FALSE}
+
+    Tally[1:8,p] ~ dmulti(prob[1:8,p], TotalTests[p])
+
+		# Probability of observing Test1- Test2- Test3-
+		prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +
+		           (1-prev[p]) * (sp[1]*sp[2]*sp[3])
+
+		# Probability of observing Test1+ Test2- Test3-
+		prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3])) +
+      		     (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3])
+
+		## snip ##
+
+		# Probability of observing Test1+ Test2+ Test3+
+		prob[3,p] <- prev[p] * (se[1]*se[2]*se[3]) +
+		           (1-prev[p]) * ((1-sp[1])*(1-sp[2])*(1-sp[3]))
+```
+
+. . .
+
+- We need to take **extreme** care with these equations, and the multinomial tabulation!!!
+ 
 
 ## Are the tests conditionally independent?
 
@@ -119,16 +130,18 @@ TODO:  show equations
 
 . . .
 
-- Example:  we have one PCR test for viral DNA and two antibody tests
-
-  * The two antibody tests are more likely to give the same result than the PCR test
-  
-. . .
-
 - Example:  we have one blood test, one milk test, and one faecal test
 
   * But the blood and milk test are basically the same test, just on different samples
   * Therefore the blood and milk tests are more likely to give the same result
+  
+. . .
+
+- Example:  we test people for COVID using an antigen test on a nasal swab, a PCR test on a throat swab, and the same antigen test on the same throat swab
+
+  * The virus may be present in the throat, or nose, or neither, or both
+  * If it is only present in the throat then only the PCR and second antigen test should test positive
+  * On the other hand, we use the same antigen test twice, so it might cross-react with the same non-target virus
 
 . . .
 
@@ -137,195 +150,136 @@ TODO:  show equations
 
 ## Dealing with correlation
 
-It helps to consider the data simulation as a biological process.  
+It helps to consider the data simulation as a (simplified) biological process (where my parameters are not representative of real life!):
 
 ```{r}
-# Parameter values to simulate:
-N <- 200
-se1 <- 0.8; sp1 <- 0.95
-se2 <- 0.9; sp2 <- 0.99
-se3 <- 0.95; sp3 <- 0.95
-
-Populations <- 2
-prevalence <- c(0.25,0.75)
-Group <- rep(1:Populations, each=N)
-
-# Ensure replicable data:
-set.seed(2017-11-21)
-
-# The probability of an antibody response given disease:
-abse <- 0.8
-# The probability of no antibody response given no disease:
-absp <- 1 - 0.2
-```
-
----
-
-```{r}
-# Simulate the true latent state:
-true <- rbinom(N*Populations, 1, prevalence[Group])
-
-# Tests 1 & 2 will be co-dependent on antibody response:
-antibody <- rbinom(N*Populations, 1, abse*true + (1-absp)*(1-true))
-# Simulate test 1 & 2 results based on this other latent state:
-test1 <- rbinom(N*Populations, 1, se1*antibody + (1-sp1)*(1-antibody))
-test2 <- rbinom(N*Populations, 1, se2*antibody + (1-sp2)*(1-antibody))
-
-# Simulate test results for the independent test 3:
-test3 <- rbinom(N*Populations, 1, se3*true + (1-sp3)*(1-true))
-
-ind3tests <- data.frame(Population=Group, Test1=test1, Test2=test2, Test3=test3)
-```
-
----
-
-```{r}
-# The overall sensitivity of the correlated tests is:
-abse*se1 + (1-abse)*(1-sp1)
-abse*se2 + (1-abse)*(1-sp2)
-
-# The overall specificity of the correlated tests is:
-absp*sp1 + (1-absp)*(1-se1)
-absp*sp2 + (1-absp)*(1-se2)
+# The probability of infection with COVID in two populations:
+prevalence <- c(0.01,0.05)
+# The probability of shedding COVID in the nose conditional on infection:
+nose_shedding <- 0.8
+# The probability of shedding COVID in the throat conditional on infection:
+throat_shedding <- 0.8
+# The probability of detecting virus with the antigen test:
+antigen_detection <- 0.75
+# The probability of detecting virus with the PCR test:
+pcr_detection <- 0.999
+# The probability of random cross-reaction with the antigen test:
+antigen_crossreact <- 0.05
+# The probability of random cross-reaction with the PCR test:
+pcr_crossreact <- 0.01
 ```
 
 . . .
 
-We need to think carefully about what we are conditioning on when interpreting sensitivity and specificity!
+Note:  cross-reactions are assumed to be independent!
+
+---
+
+```{r}
+# Other parameter values to simulate:
+N <- 20000
+Populations <- length(prevalence)
+
+covid_data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  ## True infection status:
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  ## Nose shedding status:
+  mutate(Nose = Status * rbinom(N, 1, nose_shedding)) %>%
+  ## Throat shedding status:
+  mutate(Throat = Status * rbinom(N, 1, throat_shedding)) %>%
+  ## The nose swab antigen test may be false or true positive as follows:
+  mutate(NoseAG = case_when(
+    Nose == 1 ~ rbinom(N, 1, antigen_detection),
+    Nose == 0 ~ rbinom(N, 1, antigen_crossreact)
+  )) %>%
+  ## The throat swab antigen test may be false or true positive as follows:
+  mutate(ThroatAG = case_when(
+    Throat == 1 ~ rbinom(N, 1, antigen_detection),
+    Throat == 0 ~ rbinom(N, 1, antigen_crossreact)
+  )) %>%
+  ## The PCR test may be false or true positive as follows:
+  mutate(ThroatPCR = case_when(
+    Throat == 1 ~ rbinom(N, 1, pcr_detection),
+    Throat == 0 ~ rbinom(N, 1, pcr_crossreact)
+  ))
+```
+
+---
+
+```{r}
+# The overall sensitivity of the tests can be calculated as follows:
+covid_sensitivity <- c(
+  # Nose antigen:
+  nose_shedding*antigen_detection + (1-nose_shedding)*antigen_crossreact,
+  # Throat antigen:
+  throat_shedding*antigen_detection + (1-throat_shedding)*antigen_crossreact,
+  # Throat PCR:
+  throat_shedding*pcr_detection + (1-throat_shedding)*pcr_crossreact
+)
+covid_sensitivity
+```
+
+- - -
+
+The overall specificity of the tests is more straightforward:
+
+```{r}
+covid_specificity <- c(
+  # Nose antigen:
+  1 - antigen_crossreact,
+  # Throat antigen:
+  1 - antigen_crossreact,
+  # Throat PCR:
+  1 - pcr_crossreact
+)
+covid_specificity
+```
+
+. . .
+
+However:  this assumes that cross-reactions are independent!
 
 
 ## Model specification
 
 ```{r, eval=FALSE}
 
-	se_prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +covse12 +covse13 +covse23)
-	sp_prob[1,p] <- (1-prev[p]) * (sp[1]*sp[2]*sp[3] +covsp12 +covsp13 +covsp23)
+	prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +covse12 +covse13 +covse23) +
+	             (1-prev[p]) * (sp[1]*sp[2]*sp[3] +covsp12 +covsp13 +covsp23)
 
-	se_prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3]) -covse12 -covse13 +covse23)
-	sp_prob[2,p] <- (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] -covsp12 -covsp13 +covsp23)
+	prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3]) -covse12 -covse13 +covse23) +
+	             (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] -covsp12 -covsp13 +covsp23)
 
-	...
+	## snip ##
 		
 	# Covariance in sensitivity between tests 1 and 2:
 	covse12 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )
 	# Covariance in specificity between tests 1 and 2:
 	covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )
 
+	## snip ##
+
 ```
 
+. . .
 
-## Generating the model
-
-First use template_huiwalter to create a model file:
-
-```{r, results='hide'}
-template_huiwalter(ind3tests, 'auto3tihw.bug')
-```
-
-Then find the lines for the covariances that we want to activate:
-
-```{r, echo=FALSE, comment=''}
-ml <- readLines('auto3tihw.bug')
-cat(gsub('\t','',ml[87:92]), sep='\n')
-```
-
----
-
-And edit so it looks like:
-
-```{r, echo=FALSE, comment=''}
-ml[87:92] <- c('	# Covariance in sensitivity between Test1 and Test2 tests:', '	covse12 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )  ## if the sensitivity of these tests may be correlated', '	 # covse12 <- 0  ## if the sensitivity of these tests can be assumed to be independent','	# Covariance in specificity between Test1 and Test2 tests:', '	covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )  ## if the specificity of these tests may be correlated', '	 # covsp12 <- 0  ## if the specificity of these tests can be assumed to be independent')
-cat(ml, file='auto3tihw.bug', sep='\n')
-ml <- readLines('auto3tihw.bug')
-cat(gsub('\t','',ml[87:92]), sep='\n')
-```
-
-[i.e. swap the comments around]
-
----
-
-You will also need to uncomment out the relevant initial values for BOTH chains (on lines 117-122 and 128-133):
-
-```{r, echo=FALSE, comment=''}
-ml <- readLines('auto3tihw.bug')
-cat(gsub('\t','',ml[128:133]), sep='\n')
-```
-
-So that they look like:
-
-```{r, echo=FALSE, comment=''}
-ml[c(117,120)] <- c('"covse12" <- 0', '"covsp12" <- 0')
-ml[c(128,131)] <- c('"covse12" <- 0', '"covsp12" <- 0')
-cat(ml, file='auto3tihw.bug', sep='\n')
-ml <- readLines('auto3tihw.bug')
-cat(gsub('\t','',ml[128:133]), sep='\n')
-ff <- file.copy('auto3tihw.bug', 'auto3tihw2.bug')
-```
-
-```{r, results='hide'}
-results <- run.jags('auto3tihw.bug')
-```
-
-
-
-
-## Practical considerations
-
-- Adds complexity to the model i.e. reduces identifiability
-
-- Probabilities need to be constrained
-
-- We need extreme extreme care to make sure the equations are correct
-
-
+It is quite easy to get the terms slightly wrong!
 
 ## Template Hui-Walter
 
-We would usually start with individual-level data in a dataframe:
-
-```{r}
-se1 <- 0.9; se2 <- 0.8; sp1 <- 0.95; sp2 <- 0.99
-N <- 100
-prevalences <- tribble(~Population, ~Prevalence,
-                       1, 0.1,
-                       2, 0.5,
-                       3, 0.9 ) %>%
-  mutate(Population = factor(Population, levels=1:3, labels=str_c("Pop_",1:3)))
-
-simdata <- tibble(Population = sample(levels(prevalences$Population), N, replace=TRUE)) %>%
-  left_join(prevalences, by="Population") %>%
-  mutate(Status = rbinom(N, 1, Prevalence)) %>%
-  mutate(Test_1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
-  mutate(Test_2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
-
-```
-
----
-
-```{r, eval=FALSE}
-head(simdata)
-```
-
-```{r, echo=FALSE}
-head(simdata)
-```
-
-[Except that Prevalence and Status would not normally be known!]
-
----
-
 The model code and data format for an arbitrary number of populations (and tests) can be determined automatically using the template_huiwalter function from the runjas package:
 
-```{r, results='hide'}
-template_huiwalter(simdata %>% select(Population, Test_1, Test_2), outfile='autohw.bug')
+```{r}
+template_huiwalter(covid_data %>% select(Population, NoseAG, ThroatAG, ThroatPCR), outfile = 'covidmodel.txt')
 ```
 
 ---
 
-This generates self-contained model/data/initial values etc (you can ignore covse and covsp for now):
+This generates self-contained model/data/initial values etc:
 
 ```{r echo=FALSE, comment=''}
-cat(readLines('autohw.bug')[-(1:2)], sep='\n')
+cleanup <- c(cleanup, 'covidmodel.txt')
+cat(readLines('covidmodel.txt')[-(1:2)], sep='\n')
 ```
 
 ---
@@ -333,7 +287,7 @@ cat(readLines('autohw.bug')[-(1:2)], sep='\n')
 And can be run directly from R:
 
 ```{r, results='hide'}
-results <- run.jags('autohw.bug')
+results <- run.jags('covidmodel.txt')
 results
 ```
 
@@ -346,13 +300,83 @@ knitr::kable(res)
 ---
 
 - Modifying priors must still be done directly in the model file
+  * Same for adding .RNG.seed and the deviance monitor
 
 - The model needs to be re-generated if the data changes
   * But remember that your modified priors will be reset
 
 - There must be a single column for the population (as a factor), and all of the other columns (either factor, logical or numeric) are interpreted as being test results
 
-NB:  change priors, turn on/off covariances, add deviance monitor
+. . .
+
+- Covariance terms are all deactivated by default
+
+## Activating covariance terms
+
+Find the lines for the covariances that we want to activate (i.e. the two Throat tests):
+
+```{r, echo=FALSE, comment=''}
+indexes <- 101:106
+cleanup <- c(cleanup, "covidmodel.txt")
+ml <- readLines('covidmodel.txt')
+cat(gsub('\t','',ml[indexes]), sep='\n')
+```
+
+---
+
+And edit so it looks like:
+
+```{r, echo=FALSE, comment=''}
+ml[indexes] <- c('	# Covariance in sensitivity between ThroatAG and ThroatPCR tests:', '	covse23 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )  ## if the sensitivity of these tests may be correlated', '	 # covse23 <- 0  ## if the sensitivity of these tests can be assumed to be independent','	# Covariance in specificity between ThroatAG and ThroatPCR tests:', '	covsp23 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )  ## if the specificity of these tests may be correlated', '	 # covsp23 <- 0  ## if the specificity of these tests can be assumed to be independent')
+cat(ml, file='covidmodel.txt', sep='\n')
+ml <- readLines('covidmodel.txt')
+cat(gsub('\t','',ml[indexes]), sep='\n')
+```
+[i.e. swap the comments around]
+
+---
+
+You will also need to uncomment out the relevant initial values for BOTH chains (on lines 117-122 and 128-133):
+
+```{r, echo=FALSE, comment=''}
+ml <- readLines('covidmodel.txt')
+cat(gsub('\t','',ml[128:133]), sep='\n')
+```
+
+So that they look like:
+
+```{r, echo=FALSE, comment=''}
+ml[c(119,122)] <- c('"covse23" <- 0', '"covsp23" <- 0')
+ml[c(130,133)] <- c('"covse23" <- 0', '"covsp23" <- 0')
+cat(ml, file='covidmodel.txt', sep='\n')
+ml <- readLines('covidmodel.txt')
+cat(gsub('\t','',ml[128:133]), sep='\n')
+```
+
+---
+
+```{r}
+results <- run.jags('covidmodel.txt', sample=50000)
+results
+```
+
+
+## Practical considerations
+
+- Correlation terms add complexity to the model in terms of:
+  * Opportunity to make a coding mistake
+  * Reduced identifiability
+
+. . .
+
+- The template_huiwalter function helps us with coding mistakes
+
+- Only careful consideration of covariance terms can help us with identifiability
+
+. . .
+
+We will return to these themes tomorrow!
+
 
 # Practical session 4
 
@@ -367,141 +391,153 @@ NB:  change priors, turn on/off covariances, add deviance monitor
 
 `r if(params$presentation) {"\\begin{comment}"}`
 
-## Exercise plan TODO
+## Exercise 1 {.fragile}
 
-- Give them a dataset with 3 tests where there is correlation between 2 of them
-  - Including the 3rd test impacts inference on the other two
-  - Including correlation between tests 2 and 3 has an additional impact
-  - It is technically possible to fit correlation if just using tests 1 and 2
-
-- Ask them to fit just tests 2 and 3 vs just 1 and 2
-  - Prevalence will change
-  - Even if using correlation
-  - Set up for discussion of latent class tomorrow
-
-Optional:
-
-- Simulate data with 4, 5, 6 etc tests and analyse
-  - Observe the non-linear increase in the number of covariance terms
-  - What happens if tests 4 and 5 have (near) identical results?
-
-## Exercise {.fragile}
-
-Simulate data with N=1000 and dependence between tests 1 and 2
-
-Then fit a model assuming independence between all tests and compare the results to your simulation parameters
-
-Now turn on covariance between tests 1 and 2 and refit the model.  Are the results more reasonable?
-
-
-## Solution {.fragile}
-
+Use the template_huiwalter function to look at the simple 2-test 5-population example from earlier.  Use this data simulation code:
 
 ```{r}
-# Parameter values to simulate:
+# Set a random seed so that the data are reproducible:
+set.seed(2021-06-29)
+
+sensitivity <- c(0.9, 0.6)
+specificity <- c(0.95, 0.9)
 N <- 1000
-se1 <- 0.8
-se2 <- 0.9
-se3 <- 0.95
-sp1 <- 0.95
-sp2 <- 0.99
-sp3 <- 0.95
 
-# The probability of an antibody response given disease:
-abse <- 0.8
-# The probability of no antibody response given no disease:
-absp <- 1 - 0.2
+# Change the number of populations here:
+Populations <- 5
+# Change the variation in prevalence here:
+(prevalence <- runif(Populations, min=0.1, max=0.9))
 
-# Simulate the true latent state:
-true <- rbinom(N*Populations, 1, prevalence[Group])
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %>%
+  select(-Status)
 
-# Tests 1 & 2 will be co-dependent on antibody response:
-antibody <- rbinom(N*Populations, 1, abse*true + (1-absp)*(1-true))
-# Simulate test 1 & 2 results based on this other latent state:
-test1 <- rbinom(N*Populations, 1, se1*antibody + (1-sp1)*(1-antibody))
-test2 <- rbinom(N*Populations, 1, se2*antibody + (1-sp2)*(1-antibody))
+(twoXtwoXpop <- with(data, table(Test1, Test2, Population)))
+(Tally <- matrix(twoXtwoXpop, ncol=Populations))
+(TotalTests <- apply(Tally, 2, sum))
 
-# Simulate test results for the independent test 3:
-test3 <- rbinom(N*Populations, 1, se3*true + (1-sp3)*(1-true))
-
-ind3tests <- data.frame(Population=Group, Test1=test1, Test2=test2, Test3=test3)
-
-# The overall sensitivity of the correlated tests is:
-abse*se1 + (1-abse)*(1-sp1)
-abse*se2 + (1-abse)*(1-sp2)
-
-# The overall specificity of the correlated tests is:
-absp*sp1 + (1-absp)*(1-se1)
-absp*sp2 + (1-absp)*(1-se2)
-
-template_huiwalter(ind3tests, outfile='auto3tihw.bug')
+template_huiwalter(data, outfile="template_2test.txt")
 ```
 
-Then change relevant lines in auto3tihw.bug so that it looks like:
+Look at the model code and familiarise yourself with how the model is set out (there are some small differences, but the overall code is equivalent).  Make sure you can add a .RNG.seed, modify the priors, and add a deviance monitor.  Run the model.
 
-```{r, echo=FALSE, eval=FALSE}
-unlink('auto3tihw.bug')
-ff <- file.copy('auto3tihw2.bug', 'auto3tihw.bug')
-Sys.sleep(1)
+Now activate the correlation terms between tests 1 and 2.  Is anything different about the results?
+
+## Solution 1 {.fragile}
+
+There is no particular solution to the first part of this exercise, but please ask if you have any questions about the model code that template_huiwalter generates.  Remember that re-running the template_huiwalter function will over-write your existing model including any changes you made, so be careful!
+
+We can run the model as follows:
+
+```{r}
+results_nocov <- run.jags("template_2test.txt")
+results_nocov
+```
+```{r include=FALSE}
+cleanup <- c(cleanup, "template_2test.txt")
+cleanup <- c(cleanup, "template_2test_cov.txt")
 ```
 
-```{r, echo=FALSE, comment='', eval=FALSE}
-cat(readLines('auto3tihw.bug'), sep='\n')
+A shortcut for activating the covariance terms is to re-run template_huiwalter as follows:
+
+```{r}
+template_huiwalter(data, outfile="template_2test_cov.txt", covariance=TRUE)
+results_cov <- run.jags("template_2test_cov.txt")
+results_cov
 ```
 
-Then run the model:
+Activating the covariance terms with 2 tests has made the model less identifiable, and has therefore decreased the effective sample size and increased the width of the 95% CI for all of the parameters.  This is not something that we recommend you do in practice, even if the two tests are known to be correlated!  We will revisit this issue tomorrow.
 
-```{r, results='hide', eval=FALSE}
-results <- run.jags('auto3tihw.bug')
+## Exercise 2 {.fragile}
+
+Simulate some Covid data based on the code given above, and analyse the data using the default priors.  Interpret the results and compare them to the known values:
+
+```{r}
+covid_sensitivity
+covid_specificity
 ```
 
-Now check the results:
+Now exclude the NoseAG test from the dataset, re-generate the model code (without covariance terms), run the model, and interpret the results.  How have the posteriors for the throat tests been affected by excluding the nose swab test?
 
-```{r, eval=FALSE}
-results
+## Solution 2 {.fragile}
+
+Here are the results for all 3 tests:
+
+```{r}
+results_3t <- run.jags('covidmodel.txt')
+results_3t
 ```
 
-We do a better job of estimating prevalence, and the se/sp for tests 1 and 2 better reflect the overall probability conditional on true status (i.e. corrected for antibody status). But notice that our effective sample size is much smaller than it was! We could run the model for a bit longer:
+I have omitted the trace plots here but make sure to always check them!
 
-```{r, results='hide', eval=FALSE}
-results <- extend.jags(results)
+Excluding the nasal swab test gives us these results:
+
+```{r}
+template_huiwalter(covid_data %>% select(Population, ThroatAG, ThroatPCR), outfile = 'covidmodel_2t.txt')
+
+results_2t <- run.jags('covidmodel_2t.txt')
+results_2t
 ```
 
-```{r, eval=FALSE}
-results
+```{r include=FALSE}
+cleanup <- c(cleanup, 'covidmodel_2t.txt')
 ```
 
+The posterior estimates for sensitivity have been affected for both tests:
 
-## Optional Exercise {.fragile}
+```{r}
+test2 <- combine.mcmc(results_2t, vars="se", return.samples = 10000)
+test3 <- combine.mcmc(results_3t, vars="se[2:3]", return.samples = 10000)
 
-Re-fit a model to this data using all three possible covse and covsp parameters
+bind_rows(
+  tibble(Model = "TwoTest", ThroatAG = test2[,1], ThroatPCR = test2[,2]),
+  tibble(Model = "ThreeTest", ThroatAG = test3[,1], ThroatPCR = test3[,2])
+) %>%
+  pivot_longer(c(ThroatAG, ThroatPCR), names_to = "Test", values_to = "Estimate") %>%
+  ggplot() +
+  aes(x = Estimate, col = Model) +
+  geom_density() +
+  facet_wrap( ~ Test)
+```
+
+Have a think about why this might be the case.  We will spend a lot of time discussing this topic tomorrow!
+
+
+## Optional Exercise A {.fragile}
+
+Re-fit a model to this data using all three possible covse and covsp parameters between all 3 tests
 
 What do you notice about the results?
 
-## Optional Solution {.fragile}
+## Optional Solution A {.fragile}
 
 You can either manually change all 3 covse/covsp from before, or regenerate the model using the covariance=TRUE option:
 
 ```{r, results='hide'}
-template_huiwalter(ind3tests, outfile='auto3tichw.bug', covariance=TRUE)
-results <- run.jags('auto3tichw.bug')
+template_huiwalter(covid_data %>% select(Population, NoseAG, ThroatAG, ThroatPCR), outfile='covidmodel_allcov.txt', covariance=TRUE)
+results_allcov <- run.jags('covidmodel_allcov.txt')
+```
+
+```{r echo=FALSE} 
+cleanup <- c(cleanup, 'covidmodel_allcov.txt')
 ```
 
 ```{r}
-results
+results_allcov
 ```
 
-This chains haven't converged (check out the psrf): the model is (or is close to being) unidentifiable.
+The effective sample size is much lower, because the model is less identifiable.  But otherwise the model does a reasonable job of estimating the parameters due to the large sample size.  This might not be the case with a smaller sample size!
 
 `r if(params$presentation) {"\\end{comment}"}`
-
 
 
 ## Summary {.fragile}
 
 - Including multiple tests is technically easy but philosophically more difficult
 
-- Complexity of adding correlation terms increases with more tests
+- Complexity of adding correlation terms increases non-linearly with more tests
   - Probably best to stick to correlations with biological justification?
   
 - Adding/removing test results may change the posterior for
