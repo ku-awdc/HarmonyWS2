@@ -123,18 +123,20 @@ prevalence <- 0.25
 
 data <- tibble(Status = rbinom(N, 1, prevalence)) %>%
   mutate(Test1 = rbinom(N, 1, se[1]*Status + (1-sp[1])*(1-Status))) %>%
+  # Which is the same as:
+  mutate(Test1 = Status) %>%
   mutate(Test2 = rbinom(N, 1, se[2]*Status + (1-sp[2])*(1-Status)))
 
 (twoXtwo <- with(data, table(Status, Test2)))
 ```
 
-NB: the true `Status` is always the same as the result of `Test1`
 . . .
 
 ```{r}
 (sensitivity <- twoXtwo[2,2] / sum(twoXtwo[2,1:2]))
 (specificity <- twoXtwo[1,1] / sum(twoXtwo[1,1:2]))
 ```
+
 
 ## Diagnostic test evaluation: no gold standard
 
