@@ -89,7 +89,7 @@ model{
   for(p in 1:Populations){
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
     # Test1- Test2- Pop1
-	  prob[1, p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    prob[1, p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
     ## snip ##
 	  
     prev[p] ~ dbeta(1, 1)
@@ -407,12 +407,12 @@ sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
 prev <- list(chain1=c(0.1, 0.1, 0.1, 0.9, 0.9), chain2=c(0.9, 0.9, 0.9, 0.1, 0.1))
 
 # And run the model:
-results <- run.jags("multipopulation.txt", n.chains=2)
+results_5p <- run.jags("multipopulation.txt", n.chains=2)
 
 # Remember to check convergence!
-# plot(results)
+# plot(results_5p)
 
-results
+results_5p
 ```
 
 To change the number of populations and range of prevalence you just need to modify the simulation code, for example 3 populations with prevalence between 0.4-0.6 can be obtained using:
@@ -446,6 +446,19 @@ results_3p <- run.jags("multipopulation.txt", n.chains=2)
 results_3p
 ```
 
+Note that the effective sample size is not enough here - you either need to run the model for longer in the first place, or extend it to get more samples:
+
+```{r}
+# Extend the model:
+results_3p <- extend.jags(results_3p, sample=50000)
+
+# Remember to check convergence!
+# plot(results_3p)
+
+results_3p
+```
+
+
 As a general rule, the more populations you have, and the more the prevalence varies between them, the better.  However, this is conditional on having a consistent sensitivity and specificity between your populations!!!
 
 ## Exercise 2 {.fragile}
@@ -475,7 +488,7 @@ save(multi_pop_data, file="multi_pop_data.Rdata")
 ```
 
 ```{r}
-multi_pop_data
+multi_pop_data %>% count(Population, Test1, Test2)
 ```
 There are 3 populations:
 
@@ -578,7 +591,7 @@ results_3p <- run.jags("multipopulation_fixprev.txt", n.chains=2, data = data, i
 results_3p
 ```
 
-The 95% CI for sensitivity and specificity of both tests are extremely narrow compared to the previous dataset.  This is because of the 1st and 3rd population:  because we know the prevalence is 0 or 1, the latent state is no longer latent so the model is *much* better identified. This has a knock-on effect to population 2 because we assume the sensitivty and specificity are the same.
+The 95% CI for sensitivity and specificity of both tests are extremely narrow compared to the previous dataset with the same minimally informative priors.  This is because of the 1st and 3rd population:  because we know the prevalence is 0 or 1, the latent state is no longer latent so the model is *much* better identified. This has a knock-on effect to population 2 because we assume the sensitivty and specificity are the same.
 
 Re-running the model for the first 2 populations is quite straightforward:
 
@@ -636,6 +649,7 @@ bind_rows(
   geom_density() +
   facet_wrap( ~ Test)
 ```
+
 We can conclude that there is most likely something different about the sensitivity in the experimentally infected individuals.  This might have something to do with them being given an extremely large infectious dose that does not even vaguely represent the real world...
 
 We can also look at the specificity:
@@ -679,9 +693,48 @@ plot(results, vars=c("^s", "prev[1:5]"))
 
 Alternatively, if you really want all summary statistics to be calculated automatically you can set:
 
-```{r}
+```{r eval=FALSE}
 runjags.options(force.summary=TRUE)
 ```
+
+## Solution A {.fragile}
+
+```{r}
+N <- 1000
+Populations <- 100
+(prevalence <- runif(Populations, min=0.1, max=0.9))
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
+
+twoXtwoXpop <- with(data, table(Test1, Test2, Population))
+Tally <- matrix(twoXtwoXpop, ncol=Populations)
+TotalTests <- apply(Tally, 2, sum)
+
+# Adjust initial values for an arbitrary number of populations:
+se <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+sp <- list(chain1=c(0.5,0.99), chain2=c(0.99,0.5))
+prev <- list(chain1=rep(0.1, Populations), chain2=rep(0.9, Populations))
+
+# And run the model:
+results_100p <- run.jags("multipopulation.txt", n.chains=2)
+
+# Remember to check convergence!
+# plot(results_100p, vars=c("^s", "prev[1:5]"))
+
+results_100p
+
+summary(results_100p, vars=c("^s", "prev[1:5]"))
+```
+
+The confidence intervals for prevalence in each population are extremely wide! But how do the estimates for the diagnostic test characteristics compare to using 5 populations:
+
+```{r}
+results_5p
+```
+
 
 ## Optional exercise B {.fragile}
 
@@ -709,7 +762,7 @@ This introduces the normal distribution, which is parameterised using mean and p
 
 This was quite tricky, so if you managed to get close to the solution without cheating then you have done well!
 
-```{r}
+```{r echo=FALSE, comment=''}
 random_model <- "
 model{
   for(p in 1:Populations){
@@ -790,7 +843,7 @@ Remember that the intercept is on the logit scale, so -4 corresponds to a preval
 The code to run the model is very similar to before:
 
 ```{r}
-results_random <- run.jags("multirandom.txt", n.chains=2, method="parallel")
+results_random <- run.jags("multirandom.txt", n.chains=2, method="parallel", sample=20000)
 
 # Note: this is only commented out to save space in the exercise file!
 # plot(results_random)

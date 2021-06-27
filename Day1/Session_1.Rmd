@@ -502,7 +502,7 @@ cat(model_definition, sep='\n', file='basicjags.txt')
 
 - Create a new R file in RStudio by clicking on `File` then `New File` then `R script`, and save the file as e.g. `Session 1 exercises.R` in the same folder
 
-- Copy and paste the following R code given above into this R script file:
+- Copy and paste the following R code into this R script file:
 
 ```{r eval=FALSE}
 library('runjags')
@@ -518,8 +518,7 @@ prevalence <- list(chain1=0.05, chain2=0.95)
 results <- run.jags('basicjags.txt', n.chains=2, burnin=5000, sample=10000)
 
 # check convergence based on trace plots:
-# Note: this is only commented out to save space in the exercise file!
-# plot(results)
+plot(results)
 
 # check effective sample size and psrf, and then interpret results:
 results
@@ -553,7 +552,7 @@ results
 cleanup <- c(cleanup, "basicjags.txt")
 ```
 
-Convergence is assessed in two ways:  firstly from the trace plots, and secondly from the psrf (Gelman-Rubin statistic).  The effective sample size is SSeff.  Once you are happy that the model has converged and has enough of a sample size, then you can interpret the results (typically median and 95% confidence interval estimates).
+Convergence is assessed in two ways:  firstly from the trace plots, and secondly from the psrf (which is the Gelman-Rubin statistic).  The effective sample size is SSeff.  Once you are happy that the model has converged and has enough of a sample size, then you can interpret the results (typically median and 95% confidence interval estimates).
 
 We can change the initial values like so:
 
@@ -607,7 +606,7 @@ Change the priors for the JAGS model from Beta(1,1) to Beta(20,1)
 
 ### Solution 2 {.fragile}
 
-The prevalence estimate and 95% CI from the frequentist method is `r coef(freq_model)` (`r plogis(confint(freq_model))[1]` - `r plogis(confint(freq_model))[2]`).  The equivalent estimates from the Bayesian method are:
+The prevalence estimate and 95% CI from the frequentist method is `r round(plogis(coef(freq_model)),2)` (`r round(plogis(confint(freq_model))[1],2)` - `r round(plogis(confint(freq_model))[2],2)`).  The equivalent estimates from the Bayesian method are:
 
 ```{r}
 summary(results)["prevalence", c("Median","Lower95","Upper95")]
@@ -635,7 +634,7 @@ results
 med2 <- as.numeric(summary(results)["prevalence","Median"])
 ```
 
-Notice that the median estimate for the Bayesian model has shifted from `r med1` to `r med2`. This is due to the relatively larger impact of priors with smaller datasets.  All Bayesian models *must* include priors - even when you don't want to. We will return to this concept later today.
+Notice that the median estimate for the Bayesian model has shifted from `r med1` to `r med2`, despite the maximum likelihood estimate remaining the same (0.7). This is due to the relatively larger impact of priors with smaller datasets.  All Bayesian models *must* include priors - even when you don't want to. We will return to this concept later today.
 
 There is also a conceptual difference in the interpretation of the confidence intervals vs credible intervals - this is actually much easier when you are Bayesian!
 
@@ -719,7 +718,7 @@ results
 
 Convergence is OK and the sample size is sufficient for all parameters.
 
-The posterior for `observed_prevalence` is the same as for `prevalence` in the old model.  But the posterios for the new (true) `prevalence`, `sensitivity` and `specificity` are extremely wide!  The model is only able to identify the `observed_prevalence`, and not the other three parameters.  There is simply not enough information to disentangle them - persuade yourself this is true by considering the following possibilities:
+The posterior for `observed_prevalence` is the same as for `prevalence` in the old model.  But the posterios for the new (true) `prevalence`, `sensitivity` and `specificity` are extremely wide!  The model is only able to identify the `observed_prevalence`, and not the other three parameters.  This is also reflected in the effective sample sizes.  There is simply not enough information to disentangle them - persuade yourself this is true by considering the following possibilities:
 
   - Is prevalence zero but the test is not very specific?
   - Is prevalence 100% but the test is not very sensitive?

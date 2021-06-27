@@ -398,12 +398,12 @@ basicglm &lt;- run.jags(&#39;basicglm.bug&#39;, n.chains=2)
 <pre class="r"><code>basicjags
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                               
-##            Lower95  Median Upper95    Mean      SD Mode    MCerr MC%ofSD SSeff
-## prevalence 0.41036 0.67698 0.90438 0.66664 0.13084   -- 0.001187     0.9 12150
-##                             
-##                AC.10    psrf
-## prevalence -0.013748 0.99996
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## prevalence 0.41874 0.67877   0.912 0.66858 0.13059   -- 0.0012003     0.9 11837
+##                          
+##                AC.10 psrf
+## prevalence -0.011188    1
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
@@ -411,23 +411,23 @@ basicloop
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                           
 ##            Lower95  Median Upper95    Mean      SD Mode      MCerr MC%ofSD
-## prevalence 0.41186 0.67509 0.90582 0.66614 0.13067   -- 0.00090407     0.7
+## prevalence 0.40889 0.67611  0.9075 0.66689 0.13106   -- 0.00092675     0.7
 ##                                   
-##            SSeff     AC.10    psrf
-## prevalence 20890 0.0044075 0.99998
+##            SSeff      AC.10   psrf
+## prevalence 20000 -0.0082178 1.0002
 ## 
-## Total time taken: 0.5 seconds
+## Total time taken: 0.4 seconds
 basicglm
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                           
-##             Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD
-## intercept  -0.51402 0.91912  2.4287 0.95116 0.74881   --   0.00706     0.9
-## prevalence  0.42241 0.71486 0.94139 0.69988 0.13987   -- 0.0012994     0.9
-##                                  
-##            SSeff     AC.10   psrf
-## intercept  11250 0.0074253 1.0001
-## prevalence 11588 0.0059867 1.0001
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## intercept  -0.4574 0.91887  2.4033 0.94643 0.73125   -- 0.0068586     0.9 11367
+## prevalence 0.42794 0.71481 0.93784 0.69989 0.13739   --   0.00126     0.9 11889
+##                               
+##                  AC.10    psrf
+## intercept  -0.00015616 0.99999
+## prevalence   0.0032768 0.99999
 ## 
 ## Total time taken: 0.3 seconds</code></pre>
 <p>The GLM model has slightly different results, due to the prior.</p>
@@ -466,28 +466,29 @@ basicglm &lt;- run.jags(&#39;basicglm.bug&#39;, n.chains=2)
 ## Simulation complete
 ## Calculating summary statistics...
 ## Calculating the Gelman-Rubin statistic for 2 variables....
+## Note: Unable to calculate the multivariate psrf
 ## Finished running the simulation</code></pre>
 <p>Ensure convergence and sample size, then compare:</p>
 <pre class="r"><code>basicjags
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                           
-##            Lower95 Median Upper95    Mean       SD Mode      MCerr MC%ofSD
-## prevalence 0.60417 0.6979 0.78276 0.69639 0.045828   -- 0.00041069     0.9
+##                                                                            
+##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
+## prevalence 0.60848 0.69703 0.78478 0.69621 0.045287   -- 0.00040378     0.9
 ##                                   
 ##            SSeff      AC.10   psrf
-## prevalence 12452 -0.0047697 1.0013
+## prevalence 12579 -0.0088026 1.0002
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                            
-##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
-## prevalence 0.60523 0.69715 0.78292 0.69587 0.045685   -- 0.00032304     0.7
-##                                 
-##            SSeff    AC.10   psrf
-## prevalence 20000 0.014004 1.0002
+##                                                                           
+##            Lower95  Median Upper95    Mean      SD Mode      MCerr MC%ofSD
+## prevalence 0.60482 0.69712 0.78238 0.69619 0.04562   -- 0.00031999     0.7
+##                                  
+##            SSeff     AC.10   psrf
+## prevalence 20326 0.0023822 1.0002
 ## 
 ## Total time taken: 0.2 seconds
 basicglm
@@ -495,12 +496,12 @@ basicglm
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                            
 ##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
-## intercept  0.42339 0.85495  1.2817 0.85818  0.21939   --  0.0019529     0.9
-## prevalence 0.61214 0.70161 0.78914 0.70027 0.045552   -- 0.00040465     0.9
-##                                  
-##            SSeff     AC.10   psrf
-## intercept  12621 0.0067108 1.0004
-## prevalence 12672 0.0058204 1.0004
+## intercept   0.4388 0.85688  1.3101 0.86204  0.22319   --  0.0020471     0.9
+## prevalence 0.61213 0.70201 0.79078   0.701 0.046169   -- 0.00042152     0.9
+##                                 
+##            SSeff      AC.10 psrf
+## intercept  11887 -0.0022469    1
+## prevalence 11997 -0.0025807    1
 ## 
 ## Total time taken: 0.6 seconds</code></pre>
 <p>The results are more similar, as the posterior is more dominated by the data.</p>
@@ -557,7 +558,6 @@ basicglm2 &lt;- run.jags(&#39;basicglm2.bug&#39;, n.chains=2)
 ## Simulation complete
 ## Calculating summary statistics...
 ## Calculating the Gelman-Rubin statistic for 2 variables....
-## Note: Unable to calculate the multivariate psrf
 ## Finished running the simulation</code></pre>
 <p>Ensure convergence and sample size, then compare:</p>
 <pre class="r"><code>basicjags
@@ -565,10 +565,10 @@ basicglm2 &lt;- run.jags(&#39;basicglm2.bug&#39;, n.chains=2)
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                                
 ##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
-## prevalence 0.41292 0.67473 0.90295 0.66575 0.13057   -- 0.0012117     0.9 11612
-##                             
-##                 AC.10   psrf
-## prevalence -0.0027848 1.0007
+## prevalence 0.41289 0.67588 0.91141 0.66652 0.13178   -- 0.0012038     0.9 11984
+##                         
+##               AC.10 psrf
+## prevalence 0.010618    1
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
@@ -576,23 +576,23 @@ basicloop
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                            
 ##             Lower95  Median Upper95    Mean      SD Mode      MCerr MC%ofSD
-## prevalence 0.086923 0.32224 0.57875 0.33233 0.13029   -- 0.00092131     0.7
-##                                  
-##            SSeff     AC.10   psrf
-## prevalence 20000 0.0066406 1.0001
+## prevalence 0.086554 0.32548  0.5823 0.33414 0.13026   -- 0.00089845     0.7
+##                                
+##            SSeff     AC.10 psrf
+## prevalence 21019 0.0084023    1
 ## 
 ## Total time taken: 0.2 seconds
 basicglm2
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                             
-##             Lower95   Median Upper95     Mean      SD Mode     MCerr MC%ofSD
-## intercept    -2.062 -0.77415 0.50604 -0.79898 0.65357   -- 0.0059604     0.9
-## prevalence 0.088005  0.31558 0.57942  0.32565 0.13031   -- 0.0011564     0.9
+##                                                                            
+##            Lower95   Median Upper95     Mean      SD Mode     MCerr MC%ofSD
+## intercept  -2.1288 -0.77464 0.44035 -0.79961 0.65515   -- 0.0059018     0.9
+## prevalence  0.0945  0.31548 0.58979  0.32553 0.13113   -- 0.0011698     0.9
 ##                                  
 ##            SSeff     AC.10   psrf
-## intercept  12024 0.0029988 1.0001
-## prevalence 12698 0.0063018 1.0001
+## intercept  12323 0.0057165 1.0002
+## prevalence 12565 0.0030909 1.0002
 ## 
 ## Total time taken: 0.3 seconds</code></pre>
 <p>The GLM model is now more similar to the others, because the prior for prevalence is more similar.</p>
@@ -967,38 +967,38 @@ basicglm &lt;- run.jags(&#39;basicglm.bug&#39;, n.chains=2)
 <pre class="r"><code>basicjags
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                               
-##            Lower95  Median Upper95    Mean     SD Mode     MCerr MC%ofSD SSeff
-## prevalence 0.41582 0.67715 0.90955 0.66794 0.1314   -- 0.0012259     0.9 11488
-##                             
-##                 AC.10   psrf
-## prevalence -0.0042633 1.0003
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## prevalence 0.41199 0.67732 0.90864 0.66662 0.13137   -- 0.0011725     0.9 12554
+##                            
+##                AC.10   psrf
+## prevalence 0.0015821 1.0002
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                           
-##            Lower95  Median Upper95    Mean      SD Mode      MCerr MC%ofSD
-## prevalence 0.41677 0.67418  0.9142 0.66436 0.13134   -- 0.00092871     0.7
-##                                   
-##            SSeff     AC.10    psrf
-## prevalence 20000 -0.014646 0.99998
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## prevalence 0.41538 0.67696 0.90975 0.66653 0.13086   -- 0.0009253     0.7 20000
+##                           
+##                 AC.10 psrf
+## prevalence -0.0066322    1
 ## 
 ## Total time taken: 0.2 seconds
 basicglm
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                           
-##             Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD
-## intercept  -0.43292 0.92069  2.4715 0.95635 0.74528   -- 0.0069098     0.9
-## prevalence  0.43295 0.71518 0.94507 0.70087 0.13871   --  0.001246     0.9
-##                                  
-##            SSeff    AC.10    psrf
-## intercept  11633  0.01543 0.99997
-## prevalence 12392 0.010313 0.99997
+##                                                                                
+##             Lower95 Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## intercept  -0.43616 0.9262  2.4748 0.95931 0.74388   -- 0.0071589       1 10797
+## prevalence  0.42522 0.7163 0.94099 0.70161 0.13858   -- 0.0012771     0.9 11775
+##                             
+##                 AC.10   psrf
+## intercept  0.00024245 1.0004
+## prevalence -0.0016889 1.0004
 ## 
-## Total time taken: 0.3 seconds</code></pre>
+## Total time taken: 0.4 seconds</code></pre>
 <p>The GLM model has slightly different results, due to the prior.</p>
 <p>What about a larger dataset:</p>
 <pre class="r"><code># Data:
@@ -1041,38 +1041,38 @@ basicglm &lt;- run.jags(&#39;basicglm.bug&#39;, n.chains=2)
 <pre class="r"><code>basicjags
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                            
-##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
-## prevalence 0.60783 0.69736 0.78364 0.69591 0.045275   -- 0.00040396     0.9
-##                                  
-##            SSeff     AC.10   psrf
-## prevalence 12562 -0.015393 1.0008
+##                                                                                
+##            Lower95  Median Upper95   Mean      SD Mode      MCerr MC%ofSD SSeff
+## prevalence 0.60903 0.69748  0.7862 0.6962 0.04548   -- 0.00040505     0.9 12607
+##                             
+##                 AC.10   psrf
+## prevalence 0.00035101 1.0001
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                                
-##            Lower95  Median Upper95    Mean     SD Mode      MCerr MC%ofSD SSeff
-## prevalence 0.60605 0.69787 0.78174 0.69639 0.0452   -- 0.00031961     0.7 20000
-##                            
-##                AC.10   psrf
-## prevalence 0.0040446 1.0001
+##                                                                            
+##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
+## prevalence  0.6071 0.69775 0.78386 0.69619 0.045182   -- 0.00031847     0.7
+##                                   
+##            SSeff     AC.10    psrf
+## prevalence 20127 0.0045476 0.99995
 ## 
 ## Total time taken: 0.2 seconds
 basicglm
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                            
-##            Lower95  Median Upper95    Mean       SD Mode      MCerr MC%ofSD
-## intercept  0.40777 0.85557  1.2805 0.85744  0.22217   --  0.0020046     0.9
-## prevalence 0.60845 0.70173 0.78862 0.70007 0.046156   -- 0.00041591     0.9
-##                                
-##            SSeff     AC.10 psrf
-## intercept  12283  -0.01675    1
-## prevalence 12316 -0.016288    1
+##                                                                           
+##            Lower95  Median Upper95    Mean       SD Mode     MCerr MC%ofSD
+## intercept  0.43571 0.85332  1.2935 0.85705  0.21949   -- 0.0019635     0.9
+## prevalence 0.61136 0.70126 0.78857 0.70004 0.045521   --  0.000406     0.9
+##                                    
+##            SSeff      AC.10    psrf
+## intercept  12496 -0.0028673 0.99998
+## prevalence 12571 -0.0032968 0.99998
 ## 
-## Total time taken: 0.7 seconds</code></pre>
+## Total time taken: 0.6 seconds</code></pre>
 <p>The results are more similar, as the posterior is more dominated by the data.</p>
 <p>What about a different prior for the GLM model? In basicglm2.bug:</p>
 <pre><code>model{
@@ -1127,7 +1127,6 @@ basicglm2 &lt;- run.jags(&#39;basicglm2.bug&#39;, n.chains=2)
 ## Simulation complete
 ## Calculating summary statistics...
 ## Calculating the Gelman-Rubin statistic for 2 variables....
-## Note: Unable to calculate the multivariate psrf
 ## Finished running the simulation</code></pre>
 <p>Ensure convergence and sample size, then compare:</p>
 <pre class="r"><code>basicjags
@@ -1135,36 +1134,36 @@ basicglm2 &lt;- run.jags(&#39;basicglm2.bug&#39;, n.chains=2)
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                               
 ##            Lower95 Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
-## prevalence 0.41607 0.6784 0.90624 0.66911 0.12917   -- 0.0011529     0.9 12553
-##                              
-##                  AC.10   psrf
-## prevalence -0.00019766 1.0003
+## prevalence 0.41355 0.6749 0.90559 0.66619 0.13077   -- 0.0011983     0.9 11909
+##                             
+##                 AC.10   psrf
+## prevalence -0.0022142 1.0003
 ## 
 ## Total time taken: 0.2 seconds
 basicloop
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                             
-##             Lower95 Median Upper95   Mean    SD Mode     MCerr MC%ofSD SSeff
-## prevalence 0.096428  0.324 0.59267 0.3335 0.131   -- 0.0009263     0.7 20000
-##                           
-##                 AC.10 psrf
-## prevalence -0.0047482    1
+##                                                                            
+##             Lower95  Median Upper95    Mean      SD Mode      MCerr MC%ofSD
+## prevalence 0.089456 0.32291 0.57928 0.33128 0.12967   -- 0.00093004     0.7
+##                                   
+##            SSeff      AC.10   psrf
+## prevalence 19440 -0.0052955 1.0001
 ## 
-## Total time taken: 0.2 seconds
+## Total time taken: 0.1 seconds
 basicglm2
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                             
-##             Lower95   Median Upper95     Mean      SD Mode     MCerr MC%ofSD
-## intercept   -2.1332 -0.78064 0.43213 -0.80065 0.65709   -- 0.0059886     0.9
-## prevalence 0.093201  0.31418 0.58443  0.32544 0.13156   -- 0.0011699     0.9
-##                                   
-##            SSeff      AC.10   psrf
-## intercept  12039 -0.0018196 1.0005
-## prevalence 12646 0.00067571 1.0005
+##                                                                            
+##             Lower95  Median Upper95     Mean      SD Mode     MCerr MC%ofSD
+## intercept   -2.1141 -0.7652 0.47491 -0.79263 0.65867   -- 0.0060987     0.9
+## prevalence 0.089174 0.31752 0.58552  0.32713 0.13156   -- 0.0011934     0.9
+##                                 
+##            SSeff    AC.10   psrf
+## intercept  11664 0.016502 1.0002
+## prevalence 12151 0.014497 1.0002
 ## 
-## Total time taken: 0.4 seconds</code></pre>
+## Total time taken: 0.3 seconds</code></pre>
 <p>The GLM model is now more similar to the others, because the prior for prevalence is more similar.</p>
 </div>
 <div id="optional-exercise" class="section level2 fragile">
@@ -1226,56 +1225,57 @@ basicglm2 &lt;- run.jags(&#39;basicglm2.bug&#39;, n.chains=2)
 ## Simulation complete
 ## Calculating summary statistics...
 ## Calculating the Gelman-Rubin statistic for 2 variables....
+## Note: Unable to calculate the multivariate psrf
 ## Finished running the simulation</code></pre>
 <p>No need to ensure convergence and sample size as we have no data! Just compare the priors directly:</p>
 <pre class="r"><code>basicjags
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                               
-##             Lower95  Median Upper95    Mean      SD Mode   MCerr MC%ofSD SSeff
-## prevalence 0.052138 0.50353 0.99943 0.50332 0.28835   -- 0.00199     0.7 20995
-##                             
-##                 AC.10   psrf
-## prevalence -0.0045051 1.0001
+##                                                                                
+##              Lower95  Median Upper95    Mean    SD Mode     MCerr MC%ofSD SSeff
+## prevalence 0.0038108 0.50083 0.95209 0.49985 0.289   -- 0.0020436     0.7 20000
+##                           
+##                 AC.10 psrf
+## prevalence -0.0052425    1
 ## 
-## Total time taken: 0.2 seconds
+## Total time taken: 0.1 seconds
 basicloop
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                           
 ##             Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD
-## prevalence 0.019819 0.49962 0.96883 0.50032 0.28941   -- 0.0020464     0.7
-##                                     
-##            SSeff       AC.10    psrf
-## prevalence 20000 -0.00019491 0.99997
+## prevalence 0.048151 0.49655 0.99908 0.49892 0.29011   -- 0.0020519     0.7
+##                                  
+##            SSeff       AC.10 psrf
+## prevalence 19989 -0.00014183    1
 ## 
 ## Total time taken: 0.2 seconds
 basicglm
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                              
-##            Lower95 Median Upper95   Mean      SD Mode     MCerr MC%ofSD SSeff
-## intercept  -1912.1  14.45  1956.4  11.84  997.62   --    6.8485     0.7 21220
-## prevalence       0      1       1 0.5056 0.49966   -- 0.0035332     0.7 20000
-##                              
-##                 AC.10    psrf
-## intercept  0.00094121  1.0003
-## prevalence  0.0070232 0.99995
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## intercept  -1969.9 -2.0527  1962.7  -3.525    1002   --    7.1373     0.7 19711
+## prevalence       0 0.11385       1 0.49904 0.49958   -- 0.0035683     0.7 19601
+##                             
+##                AC.10    psrf
+## intercept  0.0063083 0.99999
+## prevalence 0.0059688       1
 ## 
 ## Total time taken: 0.2 seconds
 basicglm2
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                             
-##            Lower95    Median Upper95      Mean      SD Mode    MCerr MC%ofSD
-## intercept  -3.2935 0.0043383  3.4822 0.0034204  1.7283   -- 0.012221     0.7
-## prevalence 0.03587   0.50108 0.97025   0.50107 0.29232   -- 0.002067     0.7
-##                                   
-##            SSeff      AC.10   psrf
-## intercept  20000 -0.0090267 1.0002
-## prevalence 20000 -0.0092998 1.0002
+##                                                                               
+##             Lower95   Median Upper95       Mean      SD Mode     MCerr MC%ofSD
+## intercept   -3.3764 -0.01472  3.4957 -0.0076578  1.7494   --   0.01237     0.7
+## prevalence 0.033245  0.49632 0.97075    0.49811 0.29308   -- 0.0020724     0.7
+##                                    
+##            SSeff      AC.10    psrf
+## intercept  20000 -0.0012085 0.99998
+## prevalence 20000 -0.0016873 0.99998
 ## 
-## Total time taken: 0.3 seconds</code></pre>
+## Total time taken: 0.2 seconds</code></pre>
 <p>You could also look at plots (particularly the histogram plot) if you wanted to.</p>
 </div>
 </div>

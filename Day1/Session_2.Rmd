@@ -458,7 +458,7 @@ results_tr_1000
 Note that model does converge, but the effective sample size is NOT high enough with 10000 samples - we need to run for longer to get reliable results:
 
 ```{r}
-results_tr_1000 <- run.jags('hw_truncated.txt', n.chains=2, sample=50000)
+results_tr_1000 <- run.jags('hw_truncated.txt', n.chains=2, sample=75000)
 
 # Note: this is only commented out to save space in the exercise file!
 # plot(results_tr_1000)
@@ -625,7 +625,7 @@ The specificity for test 2 is well estimated but the sensitivity has large confi
 
 ## Optional exercise A {.fragile}
 
-Adapt the model so that you can specify the `hyper-priors` of the sensitivity and specificity for both tests as data
+Adapt the model so that you can specify the 'hyper-priors' of the sensitivity and specificity for both tests as data
 
 Now pretend that the manufacturer of the test told you that Test 1 actually has these characteristics:
 
@@ -717,11 +717,12 @@ results_manufacturer <- run.jags('hw_hyperprior.txt', n.chains=2)
 # plot(results_manufacturer)
 
 results_manufacturer
+results_si_1000
 ```
 
 Note: you might see some warnings like `Warning in if (class(temp) == "function") {: the condition has length > 1 and only the first element will be used` - this is due to a bug in runjags that will be fixed soon!
 
-Compared to the earlier results (results_si_1000), the sensitivity and specificty of test 1 are estimated to be higher, but the sensitivity of test 2 is estimated to be lower. Having too much confidence in the performance of one test will always make all of the other tests look worse! So remember to carefully assess the studies on which you base your priors:  if these come from laboratory validation exercises (which typically involve spiked samples with extremely high concentrations of the target vs completely clean/sterile negative controls) then this may not be a realistic estimation of the sensitivity or specificity in the field.
+Compared to the earlier results (results_si_1000), the sensitivity and specificty of test 1 are estimated to be higher, but the sensitivity of test 2 is estimated to be lower. In fact, the 95% CI for specificity of test 2 no longer contains the true simulation value (0.9). Having too much confidence in the performance of one test will always make all of the other tests look worse! So remember to carefully assess the studies on which you base your priors:  if these come from laboratory validation exercises (which typically involve spiked samples with extremely high concentrations of the target vs completely clean/sterile negative controls) then this may not be a realistic estimation of the sensitivity or specificity in the field.
 
 In general the best way to assess the effect of your priors is by sensitivity analysis:  change the priors slightly (for example make them less informative) and see if your posterior changes substantially.  In this case we can see that the stronger priors for test 1 move the estimates for test 2 substantially, so we would have to be extremely sure that these priors are correct in order to believe the model results.
 

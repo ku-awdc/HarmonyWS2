@@ -98,7 +98,7 @@ Homework (reminder):  think about what exactly the latent class is in these situ
 
 ## A hierarchy of latent states
 
-```{r echo=FALSE, out.width="100%", out.height="100%"}
+```{r echo=FALSE, out.width="100%", out.height="100%", fig.cap="Hierarchy of a simple 3-test system"}
 knitr::include_graphics("../rsc/dag3test.pdf")
 ```
 
@@ -128,7 +128,7 @@ knitr::include_graphics("../rsc/dag3test.pdf")
 
 Parasites generally have more complex life cycles
 
-```{r echo=FALSE, out.width="100%", out.height="100%"}
+```{r echo=FALSE, out.width="100%", out.height="100%", fig.cap="Life cycle of liver fluke"}
 knitr::include_graphics("../rsc/fluke.pdf")
 ```
 
@@ -136,7 +136,7 @@ knitr::include_graphics("../rsc/fluke.pdf")
 
 So diagnostic tests are more difficult to interpret!
 
-```{r echo=FALSE, out.width="100%", out.height="100%"}
+```{r echo=FALSE, out.width="100%", out.height="100%", fig.cap="Diagnostic tests for liver fluke"}
 knitr::include_graphics("../rsc/flukediagnostics.pdf")
 ```
 

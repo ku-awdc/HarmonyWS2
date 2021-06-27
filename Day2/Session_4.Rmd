@@ -290,9 +290,13 @@ This generates self-contained model/data/initial values etc
 
 ```{r echo=FALSE, comment=''}
 cleanup <- c(cleanup, 'covidmodel.txt')
-cat(readLines('covidmodel.txt')[-(1:2)], sep='\n')
+cat(readLines('covidmodel.txt')[3:111], sep='\n')
 ```
+---
 
+```{r echo=FALSE, comment=''}
+cat(readLines('covidmodel.txt')[-(1:111)], sep='\n')
+```
 ---
 
 And can be run directly from R:
@@ -459,7 +463,7 @@ results_cov <- run.jags("template_2test_cov.txt")
 results_cov
 ```
 
-Activating the covariance terms with 2 tests has made the model less identifiable, and has therefore decreased the effective sample size and increased the width of the 95% CI for all of the parameters.  This is not something that we recommend you do in practice, even if the two tests are known to be correlated!  We will revisit this issue tomorrow.
+Activating the covariance terms with 2 tests has made the model less identifiable, and has therefore decreased the effective sample size and increased the width of the 95% CI for all of the parameters to the point that the model is no longer very useful.  This is not something that we recommend you do in practice, even if the two tests are known to be correlated!  We will revisit this issue tomorrow.
 
 ## Exercise 2 {.fragile}
 
@@ -481,7 +485,14 @@ results_3t <- run.jags('covidmodel.txt')
 results_3t
 ```
 
-I have omitted the trace plots here but make sure to always check them!
+I have omitted the trace plots here but make sure to always check them!  You can see that the true values for overall sensitivity and specificity are within their respective 95% CI:
+
+```{r}
+covid_sensitivity
+covid_specificity
+```
+
+You should also notice that the model has detected a positive covariance between tests 2 and 3 (the throat swab tests), although the 95% CI does include zero.  Estimating covariance terms is extremely difficult for the model to do accurately.
 
 Excluding the nasal swab test gives us these results:
 
@@ -496,7 +507,7 @@ results_2t
 cleanup <- c(cleanup, 'covidmodel_2t.txt')
 ```
 
-The posterior estimates for sensitivity have been affected for both tests:
+The posterior estimates for sensitivity have been affected for both tests, and neither now identify the true simulation parameter:
 
 ```{r}
 test2 <- combine.mcmc(results_2t, vars="se", return.samples = 10000)
@@ -511,6 +522,13 @@ bind_rows(
   aes(x = Estimate, col = Model) +
   geom_density() +
   facet_wrap( ~ Test)
+```
+
+However, they do look more similar to the probabilities of detection conditional on shedding:
+
+```{r}
+antigen_detection
+pcr_detection
 ```
 
 Have a think about why this might be the case.  We will spend a lot of time discussing this topic tomorrow!
@@ -539,7 +557,7 @@ cleanup <- c(cleanup, 'covidmodel_allcov.txt')
 results_allcov
 ```
 
-The effective sample size is much lower, because the model is less identifiable.  But otherwise the model does a reasonable job of estimating the parameters due to the large sample size.  This might not be the case with a smaller sample size!
+The effective sample size is much lower, because the model is less identifiable.  But otherwise the model does a reasonable job of estimating the parameters due to the large sample size, albeit with wider 95% CI then with only covariance between throat swab tests included  This might not be the case with a smaller sample size!
 
 `r if(params$presentation) {"\\end{comment}"}`
 
@@ -554,7 +572,7 @@ The effective sample size is much lower, because the model is less identifiable.
   
 - Adding/removing test results may change the posterior for
   - Other test Se / Sp
-  - Prevlanece
+  - Prevalence
 
 ## Homework
 
