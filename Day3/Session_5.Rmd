@@ -62,8 +62,9 @@ cleanup <- character(0)
   - Particualrly if using template_huiwalter
   
 - Verifying that the assumptions you are making are correct is harder
-  - The sensitivity and specificity must be consistent across populations
-  - Pairwise correlation between tests should be accounted for (with >2 tests)
+  - The sensitivity and specificity must be consistent
+  - Pairwise correlation between tests should be accounted for
+    * With >2 tests
 
 # How to interpret the latent class
 
@@ -84,7 +85,8 @@ Homework (reminder):  think about what exactly the latent class is in these situ
 
 . . .
 
-  * The latent status is actually 'producing antibodies' not 'diseased'
+  * The latent status is actually 'producing antibodies'
+    * And not 'diseased' !!!
   
 . . .
 
@@ -96,11 +98,14 @@ Homework (reminder):  think about what exactly the latent class is in these situ
 
 ## A hierarchy of latent states
 
-![DAG with 3 tests and 2 intermediate states](../rsc/dag3test.pdf)
+```{r echo=FALSE, out.width="100%", out.height="100%"}
+knitr::include_graphics("../rsc/dag3test.pdf")
+```
+
 
 ## Branching of processes leading to test results
 
-- Sometimes we have multiple tests that are detecting a similar thing
+- Sometimes we have multiple tests detecting similar things
   
   - For example:  two antibody tests and one antigen test
     - The antibody tests will be correlated
@@ -116,7 +121,42 @@ Homework (reminder):  think about what exactly the latent class is in these situ
 
 - Or even three antibody tests where two are primed to detect the same thing, and one has a different target!
   
-  - In this case all three tests are correlated, but two are more strongly correlated
+  - In this case all three tests are correlated
+  - But two are more strongly correlated
+
+- - -
+
+Parasites generally have more complex life cycles
+
+```{r echo=FALSE, out.width="100%", out.height="100%"}
+knitr::include_graphics("../rsc/fluke.pdf")
+```
+
+- - -
+
+So diagnostic tests are more difficult to interpret!
+
+```{r echo=FALSE, out.width="100%", out.height="100%"}
+knitr::include_graphics("../rsc/flukediagnostics.pdf")
+```
+
+- - -
+
+What are the tests detecting?
+
+  - Faecal egg counts
+    * Detect eggs from adult parasites
+    * These are produced 8-12 weeks after infection
+    * Eggs may persist in the gall bladder for some weeks after infection has been cleared
+    
+  - Antigen ELISA
+    * Detects presence of maturing/adult parasites in faeces
+    * This occurs from 5-8 weeks after infection
+    * Parasites only detectable during active infection
+
+  - Antibody ELISA
+    * Triggered by migrating juveniles and adults
+    * Persists (although declining) for several months after infection has been cleared
 
 
 ## What is sensitivity and specificity?
@@ -125,7 +165,7 @@ The probability of test status conditional on true disease status?
 
 . . .
 
-Or the probability of test status conditional on the latent state?
+The probability of test status conditional on the latent state?
 
 . . .
 
