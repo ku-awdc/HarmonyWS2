@@ -437,14 +437,18 @@ print(pt[[4]])
 
 ---
 
-Then check the effective sample size (SSeff) and Gelman-Rubin statistic (psrf):
+Note:  for multiple parameters, use the 'back' button to cycle through plots!
+
+. . .
+
+Then check the effective sample size and Gelman-Rubin statistic:
 
 ```{r}
 results
 ```
 
 
-Reminder:  we want psrf < 1.05 and SSeff > 1000
+Reminder:  we want SSeff > 1000 and psrf < 1.05
 
 
 ## Introduction to practical sessions
