@@ -340,6 +340,11 @@ library("PriorGen")
 findbeta(themedian = 0.94, percentile=0.95, percentile.value = 0.92)
 hpd(qbeta, shape1=429.95, shape2=27.76)
 ```
+
+. . .
+
+Note: `themedian` could also be `themean`
+
 ---
 
 ```{r}
@@ -472,8 +477,8 @@ Now we can see that the 95% confidence intervals for prev, se and sp are all qui
 
 - Find beta distribution priors for:
 
-  * Sensitivity = 0.9 (95% CI: 0.85 - 0.95)
-  * Specificity = 0.95 (95%CI: 0.92-0.97)
+  * Sensitivity: mean estimate = 0.9 (95% CI: 0.85 - 0.95)
+  * Specificity: mean estimate = 0.95 (95%CI: 0.92-0.97)
 
 - Look at these distributions using curve and hpd
 
@@ -485,8 +490,9 @@ Now we can see that the 95% confidence intervals for prev, se and sp are all qui
 
 ## Solution 2 {.fragile}
 
-Parameters for Sensitivity = 0.9 (95% CI: 0.85 - 0.95):
+Parameters for Sensitivity: mean estimate = 0.9 (95% CI: 0.85 - 0.95):
 
+[Note: this is `themean` rather than `themedian`!]
 
 ```{r}
 PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.85)
@@ -494,7 +500,7 @@ hpd(qbeta, shape1=148.43, shape2=16.49)
 curve(dbeta(x, 148.43, 16.49), from=0, to=1)
 ```
 
-Parameters for Specificity = 0.95 (95%CI: 0.92-0.97):
+Parameters for Specificity: mean estimate = 0.95 (95%CI: 0.92-0.97):
 
 ```{r}
 PriorGen::findbeta(themean=0.95, percentile = 0.975, percentile.value = 0.92)

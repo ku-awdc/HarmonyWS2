@@ -697,7 +697,7 @@ sensitivity <- list(chain1=0.95, chain2=0.05)
 specificity <- list(chain1=0.05, chain2=0.95)
 ```
 
-- Make sure that the chains have converged and that your effective sample size is sufficient
+- Make sure that the chains have converged and that your effective sample size is sufficient. Remember that now you have multiple monitored variables, so you need to cycle through the plots using the *back* and *forward* arrows on the plot window. The very last plot is a cross-correlation plot, which shows the pairwise correlation between the estimated parameter values. What do you notice about this?
 
 - Look at the posteriors for the 4 parameters of interest.  What do you notice about identifiability?
 
@@ -722,9 +722,9 @@ results <- run.jags('obsprevmodel.txt', n.chains=2, burnin=5000, sample=10000)
 results
 ```
 
-Convergence is OK and the sample size is sufficient for all parameters.
+Convergence is OK and the sample size is sufficient for all parameters. The cross-correlation plot shows that the observed_prevalence parameter estimates are not correlated with those of the other parameters (green colours). However, the prevalence, sensitivity and specificity all show positive cross-correlation (yellow colours). Non-zero (i.e. either negative or positive) cross-correlation between parameters is a symptom of reduced identifiability of these parameters within the model. This is what causes the lower SSeff for these parameters relative to the observed prevalence parameter.
 
-The posterior for `observed_prevalence` is the same as for `prevalence` in the old model.  But the posterios for the new (true) `prevalence`, `sensitivity` and `specificity` are extremely wide!  The model is only able to identify the `observed_prevalence`, and not the other three parameters.  This is also reflected in the effective sample sizes.  There is simply not enough information to disentangle them - persuade yourself this is true by considering the following possibilities:
+The posterior for `observed_prevalence` is the same as for `prevalence` in the old model.  But the posteriors for the new (true) `prevalence`, `sensitivity` and `specificity` are extremely wide!  The model is only able to identify the `observed_prevalence`, and not the other three parameters.  This is also reflected in the effective sample sizes.  There is simply not enough information to disentangle them - persuade yourself this is true by considering the following possibilities:
 
   - Is prevalence zero but the test is not very specific?
   - Is prevalence 100% but the test is not very sensitive?
