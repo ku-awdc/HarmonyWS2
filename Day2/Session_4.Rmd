@@ -28,6 +28,9 @@ rmarkdown::render('Session_3.Rmd', 'html_document', params=list(presentation=FAL
 ```{r setup, include=FALSE}
 library("tidyverse")
 library("runjags")
+library("rjags")
+runjags.options(silent.jags=TRUE, silent.runjags=TRUE)
+
 set.seed(2021-06-22)
 
 # Reduce the width of R code output for PDF only:
@@ -100,21 +103,21 @@ cleanup <- c(cleanup, "huiwalter_model.txt")
 
 ```{r eval=FALSE}
 
-    Tally[1:8,p] ~ dmulti(prob[1:8,p], TotalTests[p])
+Tally[1:8,p] ~ dmulti(prob[1:8,p], TotalTests[p])
 
-		# Probability of observing Test1- Test2- Test3-
-		prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +
-		           (1-prev[p]) * (sp[1]*sp[2]*sp[3])
+# Probability of observing Test1- Test2- Test3-
+prob[1,p] <-  prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +
+              (1-prev[p]) * (sp[1]*sp[2]*sp[3])
 
-		# Probability of observing Test1+ Test2- Test3-
-		prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3])) +
-      		     (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3])
+# Probability of observing Test1+ Test2- Test3-
+prob[2,p] <-  prev[p] * (se[1]*(1-se[2])*(1-se[3])) +
+              (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3])
 
-		## snip ##
+## snip ##
 
-		# Probability of observing Test1+ Test2+ Test3+
-		prob[3,p] <- prev[p] * (se[1]*se[2]*se[3]) +
-		           (1-prev[p]) * ((1-sp[1])*(1-sp[2])*(1-sp[3]))
+# Probability of observing Test1+ Test2+ Test3+
+prob[3,p] <-  prev[p] * (se[1]*se[2]*se[3]) +
+              (1-prev[p]) * ((1-sp[1])*(1-sp[2])*(1-sp[3]))
 ```
 
 . . .
@@ -124,24 +127,18 @@ cleanup <- c(cleanup, "huiwalter_model.txt")
 
 ## Are the tests conditionally independent?
 
-- What do we mean by "conditionally independent?"
+- Example:  we have one blood, one milk, and one faecal test
 
-  * Independent of each other conditional on the latent state
-
-. . .
-
-- Example:  we have one blood test, one milk test, and one faecal test
-
-  * But the blood and milk test are basically the same test, just on different samples
-  * Therefore the blood and milk tests are more likely to give the same result
+  * But the blood and milk test are basically the same test
+  * Therefore they are more likely to give the same result
   
 . . .
 
 - Example:  we test people for COVID using an antigen test on a nasal swab, a PCR test on a throat swab, and the same antigen test on the same throat swab
 
-  * The virus may be present in the throat, or nose, or neither, or both
-  * If it is only present in the throat then only the PCR and second antigen test should test positive
-  * On the other hand, we use the same antigen test twice, so it might cross-react with the same non-target virus
+  * The virus may be present in the throat, nose, neither, or both
+  * But we use the same antigen test twice
+    * Might it cross-react with the same non-target virus?
 
 . . .
 
@@ -175,8 +172,9 @@ Note:  cross-reactions are assumed to be independent!
 
 ---
 
+Simulating latent states:
+
 ```{r}
-# Other parameter values to simulate:
 N <- 20000
 Populations <- length(prevalence)
 
@@ -186,18 +184,26 @@ covid_data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE))
   ## Nose shedding status:
   mutate(Nose = Status * rbinom(N, 1, nose_shedding)) %>%
   ## Throat shedding status:
-  mutate(Throat = Status * rbinom(N, 1, throat_shedding)) %>%
-  ## The nose swab antigen test may be false or true positive as follows:
+  mutate(Throat = Status * rbinom(N, 1, throat_shedding))
+```
+
+- - -
+
+Simulating test results:
+
+```{r}
+covid_data <- covid_data %>%
+  ## The nose swab antigen test may be false or true positive:
   mutate(NoseAG = case_when(
     Nose == 1 ~ rbinom(N, 1, antigen_detection),
     Nose == 0 ~ rbinom(N, 1, antigen_crossreact)
   )) %>%
-  ## The throat swab antigen test may be false or true positive as follows:
+  ## The throat swab antigen test may be false or true positive:
   mutate(ThroatAG = case_when(
     Throat == 1 ~ rbinom(N, 1, antigen_detection),
     Throat == 0 ~ rbinom(N, 1, antigen_crossreact)
   )) %>%
-  ## The PCR test may be false or true positive as follows:
+  ## The PCR test may be false or true positive:
   mutate(ThroatPCR = case_when(
     Throat == 1 ~ rbinom(N, 1, pcr_detection),
     Throat == 0 ~ rbinom(N, 1, pcr_crossreact)
@@ -206,8 +212,9 @@ covid_data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE))
 
 ---
 
+The overall sensitivity of the tests can be calculated as follows:
+
 ```{r}
-# The overall sensitivity of the tests can be calculated as follows:
 covid_sensitivity <- c(
   # Nose antigen:
   nose_shedding*antigen_detection + (1-nose_shedding)*antigen_crossreact,
@@ -243,22 +250,24 @@ However:  this assumes that cross-reactions are independent!
 ## Model specification
 
 ```{r, eval=FALSE}
+prob[1,p] <-  prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) 
+                         +covse12 +covse13 +covse23) +
+              (1-prev[p]) * (sp[1]*sp[2]*sp[3] 
+                             +covsp12 +covsp13 +covsp23)
 
-	prob[1,p] <- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +covse12 +covse13 +covse23) +
-	             (1-prev[p]) * (sp[1]*sp[2]*sp[3] +covsp12 +covsp13 +covsp23)
+prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3]) 
+	                       -covse12 -covse13 +covse23) +
+	           (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] 
+	                          -covsp12 -covsp13 +covsp23)
 
-	prob[2,p] <- prev[p] * (se[1]*(1-se[2])*(1-se[3]) -covse12 -covse13 +covse23) +
-	             (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] -covsp12 -covsp13 +covsp23)
-
-	## snip ##
+## snip ##
 		
-	# Covariance in sensitivity between tests 1 and 2:
-	covse12 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )
-	# Covariance in specificity between tests 1 and 2:
-	covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )
-
-	## snip ##
-
+# Covariance in sensitivity between tests 1 and 2:
+covse12 ~ dunif( (se[1]-1)*(1-se[2]) , 
+	                 min(se[1],se[2]) - se[1]*se[2] )
+# Covariance in specificity between tests 1 and 2:
+covsp12 ~ dunif( (sp[1]-1)*(1-sp[2]) , 
+	                 min(sp[1],sp[2]) - sp[1]*sp[2] )
 ```
 
 . . .
@@ -269,13 +278,15 @@ It is quite easy to get the terms slightly wrong!
 
 The model code and data format for an arbitrary number of populations (and tests) can be determined automatically using the template_huiwalter function from the runjas package:
 
-```{r}
-template_huiwalter(covid_data %>% select(Population, NoseAG, ThroatAG, ThroatPCR), outfile = 'covidmodel.txt')
+```{r results='hide'}
+template_huiwalter(
+  covid_data %>% select(Population, NoseAG, ThroatAG, ThroatPCR), 
+  outfile = 'covidmodel.txt')
 ```
 
----
+This generates self-contained model/data/initial values etc
 
-This generates self-contained model/data/initial values etc:
+---
 
 ```{r echo=FALSE, comment=''}
 cleanup <- c(cleanup, 'covidmodel.txt')
@@ -297,7 +308,7 @@ res[] <- round(res, 3)
 knitr::kable(res)
 ```
 
----
+## Template Hui-Walter
 
 - Modifying priors must still be done directly in the model file
   * Same for adding .RNG.seed and the deviance monitor
@@ -375,7 +386,7 @@ results
 
 . . .
 
-We will return to these themes tomorrow!
+- We will return to these themes tomorrow!
 
 
 # Practical session 4
@@ -535,7 +546,8 @@ The effective sample size is much lower, because the model is less identifiable.
 
 ## Summary {.fragile}
 
-- Including multiple tests is technically easy but philosophically more difficult
+- Including multiple tests is technically easy
+  - But philosophically more difficult!!!
 
 - Complexity of adding correlation terms increases non-linearly with more tests
   - Probably best to stick to correlations with biological justification?
@@ -544,9 +556,9 @@ The effective sample size is much lower, because the model is less identifiable.
   - Other test Se / Sp
   - Prevlanece
 
-. . .
+## Homework
 
-Homework:  think about what exactly the latent class is in these situations:
+Think about what exactly the latent class is in these situations:
 
 1. An antigen plus antibody test
 
