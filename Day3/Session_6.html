@@ -173,55 +173,386 @@ pre code {
 </div>
 
 
-<div id="session-6-coping-with-missing-data" class="section level1">
-<h1>Session 6: Coping with missing data</h1>
-<div id="outline" class="section level2">
-<h2>Outline</h2>
-<ul>
-<li><p>When tests are missing at random -&gt; easy (template_huiwalter)</p></li>
-<li><p>When tests are missing structurally -&gt; does the test missingness correspond with expected prevalence?</p></li>
-<li><p>Removing data for cross-validation purposes</p></li>
-</ul>
-</div>
 <div id="types-of-missingness" class="section level2">
 <h2>Types of missingness</h2>
+<p>MCAR: Missing completely at random</p>
 <ul>
-<li>MCAR: Missing completely at random
+<li>There is absolutely no pattern to the missingness</li>
+<li>This is the best kind</li>
+</ul>
+<div class="incremental">
+<p>MAR: Missing at random</p>
 <ul>
-<li>There is absolutely no pattern to the missingness eg:
+<li>There is a pattern to the missingness but we know what it is</li>
+<li>This is usually possible to deal with but needs some consideration</li>
+</ul>
+</div>
+<div class="incremental">
+<p>MNAR: Missing not at random</p>
+<ul>
+<li>There is an unknown (or unrecorded) pattern to the missingness</li>
+<li>It is therefore possible that the prevalence is confounded with missingness</li>
+</ul>
+</div>
+</div>
+<div id="mcar-missing-completely-at-random" class="section level2">
+<h2>MCAR: Missing completely at random</h2>
+<p>Missing samples can occur for any individual with equal probability</p>
+<ul>
+<li>Missingness is not correlated with anything</li>
+<li>There is no possibility of being confounded with prevalence</li>
+</ul>
+<div class="incremental">
+<p>Examples</p>
 <ul>
 <li>The animal was too aggressive to facilitate a blood sample</li>
-<li>Somebody dropped the samples on the way to the PCR machine</li>
-</ul></li>
-<li>This is the best kind</li>
-</ul></li>
+<li>Somebody dropped the samples on the way to the lab</li>
+</ul>
+</div>
+<div class="incremental">
+<p>Possible solutions:</p>
+<ul>
+<li>Exclude individuals with incomplete data</li>
+<li>Allow <code>template_huiwalter</code> to adjust the model code</li>
+</ul>
+</div>
+<div class="incremental">
+<p>This is a relatively rare kind of missingness, but it does happen</p>
+</div>
+</div>
+<div id="mar-missing-at-random" class="section level2">
+<h2>MAR: Missing at random</h2>
+<p>Missing samples occur due to a known pattern</p>
+<ul>
+<li>We can (and must) assess if this is likely be correlated with prevalence</li>
 </ul>
 <div class="incremental">
+<p>Examples:</p>
 <ul>
-<li>MAR: Missing at random
-<ul>
-<li>There is a pattern to the missingness but we can explain it eg:
-<ul>
-<li>Test A was not done in population 1 because of financial limitations</li>
+<li>Test A was not done in population 1 because of costs</li>
 <li>Test B was only done if Test A was positive</li>
-</ul></li>
-<li>We need to either include the explanation in the model, or ensure that it is not confounded with expected disease status</li>
-</ul></li>
 </ul>
 </div>
 <div class="incremental">
+<p>Solution depends on whether the the missigness is potentially confounded with prevalence</p>
 <ul>
-<li>MNAR: Missing not at random
-<ul>
-<li>There is an unknown (or unrecorded) pattern to the missingness eg:
-<ul>
-<li>Test B was only done if the animal had diahorrea</li>
-<li>The individual patient was given a choice if they wanted Test B after knowing the result of Test A</li>
-</ul></li>
-<li>This is a bad situation because the prevalence may be confounded with missingness</li>
-</ul></li>
+<li>No -&gt; treat as MCAR</li>
+<li>Yes -&gt; we must model the confounding</li>
 </ul>
 </div>
+<div class="incremental">
+<p>Very common type of missingness in practice</p>
+</div>
+</div>
+<div id="mnar-missing-not-at-random" class="section level2">
+<h2>MNAR: Missing not at random</h2>
+<p>Missing samples occur due to an unknown pattern</p>
+<ul>
+<li>We must assume that this might be correlated with prevalence</li>
+</ul>
+<div class="incremental">
+<p>Examples:</p>
+<ul>
+<li>Test B was only done if the animal had diarrhea</li>
+<li>The individual patient was given a choice if they wanted Test B after knowing the result of Test A</li>
+</ul>
+</div>
+<div class="incremental">
+<p>Possible solutions:</p>
+<ul>
+<li>Exclude segments of the data that may be affected by structural missingness</li>
+<li>Give up and collect a better dataset</li>
+</ul>
+</div>
+<div class="incremental">
+<p>A common type of missingness in secondary data</p>
+</div>
+</div>
+<div id="missingness-and-template-hui-walter" class="section level2">
+<h2>Missingness and template Hui-Walter</h2>
+<p>We can simulate MCAR data as follows:</p>
+<pre class="r"><code>set.seed(2021-06-30)
+# Parameter values to simulate:
+N &lt;- 1000
+sensitivity &lt;- c(0.8, 0.9, 0.95)
+specificity &lt;- c(0.95, 0.99, 0.95)
+
+Populations &lt;- 2
+prevalence &lt;- c(0.25,0.5)
+
+data &lt;- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %&gt;%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %&gt;%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %&gt;%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %&gt;%
+  mutate(Test3 = rbinom(N, 1, sensitivity[3]*Status + (1-specificity[3])*(1-Status))) %&gt;%
+  select(-Status)</code></pre>
+<hr />
+<p>Now introduce missingness in all 3 tests:</p>
+<pre class="r"><code>missingness &lt;- c(0.1, 0.2, 0.3)
+data &lt;- data %&gt;%
+  mutate(Test1 = case_when(
+    rbinom(n(), 1, missingness[1]) == 1L ~ NA_integer_,
+    TRUE ~ Test1
+  )) %&gt;%
+  mutate(Test2 = case_when(
+    rbinom(n(), 1, missingness[2]) == 1L ~ NA_integer_,
+    TRUE ~ Test2
+  )) %&gt;%
+  mutate(Test3 = case_when(
+    rbinom(n(), 1, missingness[3]) == 1L ~ NA_integer_,
+    TRUE ~ Test3
+  ))</code></pre>
+<hr />
+<pre class="r"><code>data %&gt;% count(Missing1 = is.na(Test1), Missing2 = is.na(Test2), Missing3 = is.na(Test3))
+## # A tibble: 8 x 4
+##   Missing1 Missing2 Missing3     n
+##   &lt;lgl&gt;    &lt;lgl&gt;    &lt;lgl&gt;    &lt;int&gt;
+## 1 FALSE    FALSE    FALSE      513
+## 2 FALSE    FALSE    TRUE       210
+## 3 FALSE    TRUE     FALSE      126
+## 4 FALSE    TRUE     TRUE        56
+## 5 TRUE     FALSE    FALSE       54
+## 6 TRUE     FALSE    TRUE        20
+## 7 TRUE     TRUE     FALSE       14
+## 8 TRUE     TRUE     TRUE         7</code></pre>
+<hr />
+<p>We can simply feed this data to <code>template_huiwalter</code>:</p>
+<pre class="r"><code>template_huiwalter(data, outfile=&quot;huiwalter_MAR.txt&quot;)
+## The model and data have been written to huiwalter_MAR.txt in the current working directory
+## You should check and alter priors before running the model</code></pre>
+<p>What does that look like…?</p>
+<hr />
+<pre><code>model{
+
+    ## Observation layer:
+
+    # Complete observations (N=513):
+    for(p in 1:Populations){
+        Tally_RRR[1:8,p] ~ dmulti(prob_RRR[1:8,p], N_RRR[p])
+
+        prob_RRR[1:8,p] &lt;- se_prob[1:8,p] + sp_prob[1:8,p]
+    }</code></pre>
+<hr />
+<pre><code>    # Partial observations (Test1: Recorded, Test2: Missing, Test3: Missing; N=56):
+    for(p in 1:Populations){
+        Tally_RMM[1:2,p] ~ dmulti(prob_RMM[1:2,p], N_RMM[p])
+
+        prob_RMM[1:2,p] &lt;-  se_prob[c(1,2),p] + sp_prob[c(1,2),p] +
+                            se_prob[c(3,4),p] + sp_prob[c(3,4),p] +
+                            se_prob[c(5,6),p] + sp_prob[c(5,6),p] +
+                            se_prob[c(7,8),p] + sp_prob[c(7,8),p]
+    }
+
+    # Partial observations (Test1: Recorded, Test2: Recorded, Test3: Missing; N=210):
+    for(p in 1:Populations){
+        Tally_RRM[1:4,p] ~ dmulti(prob_RRM[1:4,p], N_RRM[p])
+
+        prob_RRM[1:4,p] &lt;-  se_prob[c(1,2,3,4),p] + sp_prob[c(1,2,3,4),p] +</code></pre>
+<hr />
+<pre><code>    }
+
+    # Partial observations (Test1: Missing, Test2: Recorded, Test3: Recorded; N=54):
+    for(p in 1:Populations){
+        Tally_MRR[1:4,p] ~ dmulti(prob_MRR[1:4,p], N_MRR[p])
+
+        prob_MRR[1:4,p] &lt;-  se_prob[c(1,3,5,7),p] + sp_prob[c(1,3,5,7),p] +
+                            se_prob[c(2,4,6,8),p] + sp_prob[c(2,4,6,8),p]
+    }
+
+    # Partial observations (Test1: Missing, Test2: Recorded, Test3: Missing; N=20):
+    for(p in 1:Populations){
+        Tally_MRM[1:2,p] ~ dmulti(prob_MRM[1:2,p], N_MRM[p])
+
+        prob_MRM[1:2,p] &lt;-  se_prob[c(1,3),p] + sp_prob[c(1,3),p] +
+                            se_prob[c(2,4),p] + sp_prob[c(2,4),p] +
+                            se_prob[c(5,7),p] + sp_prob[c(5,7),p] +
+                            se_prob[c(6,8),p] + sp_prob[c(6,8),p]
+    }</code></pre>
+<hr />
+<pre><code>    # Partial observations (Test1: Missing, Test2: Missing, Test3: Recorded; N=14):
+    for(p in 1:Populations){
+        Tally_MMR[1:2,p] ~ dmulti(prob_MMR[1:2,p], N_MMR[p])
+
+        prob_MMR[1:2,p] &lt;-  se_prob[c(1,5),p] + sp_prob[c(1,5),p] +
+                            se_prob[c(2,6),p] + sp_prob[c(2,6),p] +
+                            se_prob[c(3,7),p] + sp_prob[c(3,7),p] +
+                            se_prob[c(4,8),p] + sp_prob[c(4,8),p]
+    }</code></pre>
+<div class="incremental">
+<p>NB: <code>MMM</code> combinations have been removed!</p>
+<hr />
+<pre><code>    ## Observation probabilities:
+
+    for(p in 1:Populations){
+
+        # Probability of observing Test1- Test2- Test3- from a true positive::
+        se_prob[1,p] &lt;- prev[p] * ((1-se[1])*(1-se[2])*(1-se[3]) +covse12 +covse13 +covse23)
+        # Probability of observing Test1- Test2- Test3- from a true negative::
+        sp_prob[1,p] &lt;- (1-prev[p]) * (sp[1]*sp[2]*sp[3] +covsp12 +covsp13 +covsp23)
+
+        # Probability of observing Test1+ Test2- Test3- from a true positive::
+        se_prob[2,p] &lt;- prev[p] * (se[1]*(1-se[2])*(1-se[3]) -covse12 -covse13 +covse23)
+        # Probability of observing Test1+ Test2- Test3- from a true negative::
+        sp_prob[2,p] &lt;- (1-prev[p]) * ((1-sp[1])*sp[2]*sp[3] -covsp12 -covsp13 +covsp23)
+
+        # Probability of observing Test1- Test2+ Test3- from a true positive::
+        se_prob[3,p] &lt;- prev[p] * ((1-se[1])*se[2]*(1-se[3]) -covse12 +covse13 -covse23)
+        # Probability of observing Test1- Test2+ Test3- from a true negative::
+        sp_prob[3,p] &lt;- (1-prev[p]) * (sp[1]*(1-sp[2])*sp[3] -covsp12 +covsp13 -covsp23)
+
+        # Probability of observing Test1+ Test2+ Test3- from a true positive::
+        se_prob[4,p] &lt;- prev[p] * (se[1]*se[2]*(1-se[3]) +covse12 -covse13 -covse23)
+        # Probability of observing Test1+ Test2+ Test3- from a true negative::
+        sp_prob[4,p] &lt;- (1-prev[p]) * ((1-sp[1])*(1-sp[2])*sp[3] +covsp12 -covsp13 -covsp23)
+
+        # Probability of observing Test1- Test2- Test3+ from a true positive::
+        se_prob[5,p] &lt;- prev[p] * ((1-se[1])*(1-se[2])*se[3] +covse12 -covse13 -covse23)
+        # Probability of observing Test1- Test2- Test3+ from a true negative::
+        sp_prob[5,p] &lt;- (1-prev[p]) * (sp[1]*sp[2]*(1-sp[3]) +covsp12 -covsp13 -covsp23)
+
+        # Probability of observing Test1+ Test2- Test3+ from a true positive::
+        se_prob[6,p] &lt;- prev[p] * (se[1]*(1-se[2])*se[3] -covse12 +covse13 -covse23)
+        # Probability of observing Test1+ Test2- Test3+ from a true negative::
+        sp_prob[6,p] &lt;- (1-prev[p]) * ((1-sp[1])*sp[2]*(1-sp[3]) -covsp12 +covsp13 -covsp23)
+
+        # Probability of observing Test1- Test2+ Test3+ from a true positive::
+        se_prob[7,p] &lt;- prev[p] * ((1-se[1])*se[2]*se[3] -covse12 -covse13 +covse23)
+        # Probability of observing Test1- Test2+ Test3+ from a true negative::
+        sp_prob[7,p] &lt;- (1-prev[p]) * (sp[1]*(1-sp[2])*(1-sp[3]) -covsp12 -covsp13 +covsp23)
+
+        # Probability of observing Test1+ Test2+ Test3+ from a true positive::
+        se_prob[8,p] &lt;- prev[p] * (se[1]*se[2]*se[3] +covse12 +covse13 +covse23)
+        # Probability of observing Test1+ Test2+ Test3+ from a true negative::
+        sp_prob[8,p] &lt;- (1-prev[p]) * ((1-sp[1])*(1-sp[2])*(1-sp[3]) +covsp12 +covsp13 +covsp23)
+
+    }</code></pre>
+<hr />
+<pre><code>## Data:
+data{
+&quot;Populations&quot; &lt;- 2
+&quot;N_RRR&quot; &lt;- c(233, 280)
+&quot;Tally_RRR&quot; &lt;- structure(c(148, 8, 1, 2, 9, 4, 11, 50, 133, 3, 4, 5, 8, 9, 20, 98), .Dim = c(8, 2))
+&quot;N_RMR&quot; &lt;- c(65, 61)
+&quot;Tally_RMR&quot; &lt;- structure(c(51, 3, 1, 10, 29, 2, 11, 19), .Dim = c(4, 2))
+&quot;N_RMM&quot; &lt;- c(22, 34)
+&quot;Tally_RMM&quot; &lt;- structure(c(16, 6, 20, 14), .Dim = c(2, 2))
+&quot;N_RRM&quot; &lt;- c(100, 110)
+&quot;Tally_RRM&quot; &lt;- structure(c(74, 5, 2, 19, 58, 10, 5, 37), .Dim = c(4, 2))
+&quot;N_MRR&quot; &lt;- c(27, 27)
+&quot;Tally_MRR&quot; &lt;- structure(c(18, 1, 4, 4, 15, 2, 1, 9), .Dim = c(4, 2))
+&quot;N_MRM&quot; &lt;- c(10, 10)
+&quot;Tally_MRM&quot; &lt;- structure(c(7, 3, 4, 6), .Dim = c(2, 2))
+&quot;N_MMR&quot; &lt;- c(6, 8)
+&quot;Tally_MMR&quot; &lt;- structure(c(4, 2, 2, 6), .Dim = c(2, 2))
+}</code></pre>
+</div>
+</div>
+<div id="what-about-other-types-of-missing" class="section level2">
+<h2>What about other types of missing?</h2>
+<p>MAR:</p>
+<ul>
+<li>As for MCAR</li>
+<li>As long as the randomness structure is not confounded with prevalence!</li>
+</ul>
+<div class="incremental">
+<p>MNAR:</p>
+<ul>
+<li>Solution depends entirely on the problem</li>
+<li>And sometimes there is no solution…</li>
+</ul>
+</div>
+<div class="incremental">
+<p>But remember: bigger datasets are not always better datasets…</p>
+</div>
+</div>
+<div id="making-your-data-missing" class="section level2">
+<h2>Making your data missing</h2>
+<p>What happens if we eliminate:</p>
+<ul>
+<li>One population at a time (where we have &gt;2)?</li>
+<li>One test at a time (where we have &gt;2)?</li>
+</ul>
+<div class="incremental">
+<p>Do the results change?</p>
+</div>
+<div class="incremental">
+<p>If we have &gt;2 populations <em>and</em> &gt;2 tests then we can eliminate one combination at a time!</p>
+</div>
+<div class="incremental">
+<p>This is a very useful form of cross-validation</p>
+<hr />
+<p>How can we do this?</p>
+<pre class="r"><code>all_combinations &lt;- data %&gt;%
+  pivot_longer(-Population, names_to = &quot;Test&quot;, values_to = &quot;Result&quot;) %&gt;%
+  filter(!is.na(Result)) %&gt;%
+  count(Population, Test) %&gt;%
+  print()
+## # A tibble: 6 x 3
+##   Population Test      n
+##        &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1          1 Test1   420
+## 2          1 Test2   370
+## 3          1 Test3   331
+## 4          2 Test1   485
+## 5          2 Test2   427
+## 6          2 Test3   376
+all_results &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))
+all_summary &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))</code></pre>
+<hr />
+<pre class="r"><code>crossval_data &lt;- data %&gt;%
+  mutate(Test1 = case_when(
+    Population == 1 ~ NA_integer_,
+    TRUE ~ Test1
+  ))
+
+template_huiwalter(crossval_data, &quot;model_m11.txt&quot;)
+all_results[[1]] &lt;- run.jags(&quot;model_m11.txt&quot;)
+## Loading required namespace: rjags
+all_summary[[1]] &lt;- summary(all_results[[1]], vars=&quot;^s&quot;) %&gt;%
+  as.data.frame() %&gt;%
+  rownames_to_column(&quot;Parameter&quot;) %&gt;%
+  mutate(Model = &quot;M11&quot;) %&gt;%
+  select(Model, Parameter, Median, Lower95, Upper95)</code></pre>
+<hr />
+<pre class="r"><code>all_summary[[1]]
+##   Model Parameter    Median   Lower95   Upper95
+## 1   M11     se[1] 0.8206677 0.7620171 0.8763282
+## 2   M11     se[2] 0.8941105 0.8423399 0.9462569
+## 3   M11     se[3] 0.9458963 0.9072333 0.9798754
+## 4   M11     sp[1] 0.9710334 0.9388512 0.9970277
+## 5   M11     sp[2] 0.9851706 0.9670271 0.9999999
+## 6   M11     sp[3] 0.9500671 0.9173517 0.9824784</code></pre>
+<hr />
+<pre class="r"><code>crossval_data &lt;- data %&gt;%
+  mutate(Test2 = case_when(
+    Population == 1 ~ NA_integer_,
+    TRUE ~ Test2
+  ))
+
+template_huiwalter(crossval_data, &quot;model_m12.txt&quot;)
+all_results[[2]] &lt;- run.jags(&quot;model_m12.txt&quot;)
+all_summary[[2]] &lt;- summary(all_results[[2]], vars=&quot;^s&quot;) %&gt;%
+  as.data.frame() %&gt;%
+  rownames_to_column(&quot;Parameter&quot;) %&gt;%
+  mutate(Model = &quot;M11&quot;) %&gt;%
+  select(Model, Parameter, Median, Lower95, Upper95)</code></pre>
+<hr />
+<p>Are there any substantial disagreements:</p>
+<pre class="r"><code>bind_rows(all_summary) %&gt;%
+  arrange(Parameter, Model)
+##    Model Parameter    Median   Lower95   Upper95
+## 1    M11     se[1] 0.8206677 0.7620171 0.8763282
+## 2    M11     se[1] 0.8270237 0.7702146 0.8805672
+## 3    M11     se[2] 0.8941105 0.8423399 0.9462569
+## 4    M11     se[2] 0.8947358 0.8407548 0.9441141
+## 5    M11     se[3] 0.9458963 0.9072333 0.9798754
+## 6    M11     se[3] 0.9387668 0.8926849 0.9790522
+## 7    M11     sp[1] 0.9710334 0.9388512 0.9970277
+## 8    M11     sp[1] 0.9650743 0.9393259 0.9901584
+## 9    M11     sp[2] 0.9851706 0.9670271 0.9999999
+## 10   M11     sp[2] 0.9774278 0.9491585 0.9999325
+## 11   M11     sp[3] 0.9500671 0.9173517 0.9824784
+## 12   M11     sp[3] 0.9530482 0.9175638 0.9854965</code></pre>
 </div>
 </div>
 <div id="practical-session-6" class="section level1">
@@ -229,41 +560,325 @@ pre code {
 <div id="points-to-consider" class="section level2 fragile">
 <h2 class="fragile">Points to consider</h2>
 <ol style="list-style-type: decimal">
-<li><p>How does missing-at-random data impact your results?</p></li>
+<li><p>How does MCAR data impact your results?</p></li>
 <li><p>What about if you have data using confirmatory tests?</p></li>
 <li><p>How can we use cross-validation as a method of checking assumptions?</p></li>
 </ol>
 </div>
-<div id="exercise-plan-todo" class="section level2">
-<h2>Exercise plan TODO</h2>
+<div id="exercise-1" class="section level2 fragile">
+<h2 class="fragile">Exercise 1</h2>
+<p>Simulate a 3-test 2-population dataset with MCAR data using the R code given above. Generate a model file and make sure you understand what is going on. For the sake of simplicity you may assume that the 3 tests are conditionally independent!</p>
+<p>Run the model using the default priors and analyse the results.</p>
+<p>Now retain only the complete observations and re-run the model</p>
 <ul>
-<li>Simulate data with 3 tests and remove 10%, 25%, 50% of the test results at random
-<ul>
-<li>Use template_autohuiwalter</li>
-<li>Also do the same but this time remove 1 test from 1 population</li>
-<li>Posterior variance increases but no strong bias</li>
-</ul></li>
-<li>Simulate data with 2 tests but only keep the 2nd test when the 1st is positive
-<ul>
-<li>We now have no data on the Sp of the 2nd test</li>
-<li>Strong priors for 1st test Se and Sp are also required</li>
-</ul></li>
-<li>Simulate data from multiple populations where
-<ul>
-<li>They have consistent Se/Sp</li>
-<li>One has different Se/Sp</li>
-<li>Use cross-validation (remove Tally for 1 pop at a time) to assess</li>
-</ul></li>
-</ul>
-<p>Optional:</p>
-<ul>
-<li>Simulate a more complex 2-test dataset where the second test is taken conditional on an unknown motivation of the individual following a first test result
-<ul>
-<li>Use Covid example of optional PCR following antigen test, where different groups have different motivations, but the motivation is not known</li>
-<li>Assuming it is missing at random gives misleading results</li>
-</ul></li>
+<li>How do the results compare to using all available data?</li>
 </ul>
 </div>
+<div id="solution-1" class="section level2 fragile">
+<h2 class="fragile">Solution 1</h2>
+<p>Here is the code from above:</p>
+<pre class="r"><code>set.seed(2021-06-30)
+
+# Parameter values to simulate:
+N &lt;- 1000
+sensitivity &lt;- c(0.8, 0.9, 0.95)
+specificity &lt;- c(0.95, 0.99, 0.95)
+
+Populations &lt;- 2
+prevalence &lt;- c(0.25,0.5)
+missingness &lt;- c(0.1, 0.2, 0.3)
+
+data &lt;- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %&gt;%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %&gt;%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %&gt;%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %&gt;%
+  mutate(Test3 = rbinom(N, 1, sensitivity[3]*Status + (1-specificity[3])*(1-Status))) %&gt;%
+  select(-Status)
+
+data &lt;- data %&gt;%
+  mutate(Test1 = case_when(
+    rbinom(n(), 1, missingness[1]) == 1L ~ NA_integer_,
+    TRUE ~ Test1
+  )) %&gt;%
+  mutate(Test2 = case_when(
+    rbinom(n(), 1, missingness[2]) == 1L ~ NA_integer_,
+    TRUE ~ Test2
+  )) %&gt;%
+  mutate(Test3 = case_when(
+    rbinom(n(), 1, missingness[3]) == 1L ~ NA_integer_,
+    TRUE ~ Test3
+  ))
+
+data %&gt;% count(Missing1 = is.na(Test1), Missing2 = is.na(Test2), Missing3 = is.na(Test3))
+## # A tibble: 8 x 4
+##   Missing1 Missing2 Missing3     n
+##   &lt;lgl&gt;    &lt;lgl&gt;    &lt;lgl&gt;    &lt;int&gt;
+## 1 FALSE    FALSE    FALSE      513
+## 2 FALSE    FALSE    TRUE       210
+## 3 FALSE    TRUE     FALSE      126
+## 4 FALSE    TRUE     TRUE        56
+## 5 TRUE     FALSE    FALSE       54
+## 6 TRUE     FALSE    TRUE        20
+## 7 TRUE     TRUE     FALSE       14
+## 8 TRUE     TRUE     TRUE         7
+template_huiwalter(data, outfile=&quot;huiwalter_MAR_all.txt&quot;)
+## The model and data have been written to huiwalter_MAR_all.txt in the current working directory
+## You should check and alter priors before running the model
+results_all &lt;- run.jags(&quot;huiwalter_MAR_all.txt&quot;)
+## Compiling rjags model...
+## Calling the simulation using the rjags method...
+## Adapting the model for 1000 iterations...
+## Burning in the model for 4000 iterations...
+## Running the model for 10000 iterations...
+## Simulation complete
+## Calculating summary statistics...
+## Note: The monitored variables &#39;covse12&#39;, &#39;covsp12&#39;, &#39;covse13&#39;,
+## &#39;covsp13&#39;, &#39;covse23&#39; and &#39;covsp23&#39; appear to be non-stochastic; they
+## will not be included in the convergence diagnostic
+## Calculating the Gelman-Rubin statistic for 14 variables....
+## Finished running the simulation
+# plot(results_all)
+results_all
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                           
+##         Lower95  Median Upper95    Mean        SD Mode       MCerr MC%ofSD
+## se[1]   0.78544 0.83218 0.87744 0.83156  0.023526   --  0.00023398       1
+## se[2]   0.85736 0.90303 0.94337 0.90205  0.022253   --  0.00024124     1.1
+## se[3]   0.90644 0.94291 0.97498 0.94148  0.017847   --  0.00019194     1.1
+## sp[1]   0.93896 0.95994 0.97963 0.95937  0.010499   --  0.00010868       1
+## sp[2]   0.97422 0.98874       1  0.9878 0.0073739   -- 0.000087243     1.2
+## sp[3]   0.92089  0.9486 0.97355 0.94781  0.013571   --  0.00014661     1.1
+## prev[1] 0.21837 0.26043  0.3038 0.26083  0.022009   --  0.00020798     0.9
+## prev[2]  0.4312 0.47644 0.52429 0.47649  0.023759   --  0.00023335       1
+## covse12       0       0       0       0         0    0          --      --
+## covsp12       0       0       0       0         0    0          --      --
+## covse13       0       0       0       0         0    0          --      --
+## covsp13       0       0       0       0         0    0          --      --
+## covse23       0       0       0       0         0    0          --      --
+## covsp23       0       0       0       0         0    0          --      --
+##                                 
+##         SSeff       AC.10   psrf
+## se[1]   10110  0.00095721 1.0001
+## se[2]    8509    0.010742 1.0003
+## se[3]    8646  -0.0085513      1
+## sp[1]    9331   0.0088833 1.0002
+## sp[2]    7144   -0.011658 1.0003
+## sp[3]    8569    0.013702 1.0001
+## prev[1] 11199 -0.00012769      1
+## prev[2] 10366    0.007268 1.0002
+## covse12    --          --     --
+## covsp12    --          --     --
+## covse13    --          --     --
+## covsp13    --          --     --
+## covse23    --          --     --
+## covsp23    --          --     --
+## 
+## Total time taken: 7.1 seconds</code></pre>
+<p>We can run the same model with only complete observations as follows:</p>
+<pre class="r"><code>template_huiwalter(data %&gt;% na.omit(), outfile=&quot;huiwalter_MAR_complete.txt&quot;)
+## The model and data have been written to huiwalter_MAR_complete.txt in the current working directory
+## You should check and alter priors before running the model
+results_complete &lt;- run.jags(&quot;huiwalter_MAR_complete.txt&quot;)
+## Compiling rjags model...
+## Calling the simulation using the rjags method...
+## Adapting the model for 1000 iterations...
+## Burning in the model for 4000 iterations...
+## Running the model for 10000 iterations...
+## Simulation complete
+## Calculating summary statistics...
+## Note: The monitored variables &#39;covse12&#39;, &#39;covsp12&#39;, &#39;covse13&#39;,
+## &#39;covsp13&#39;, &#39;covse23&#39; and &#39;covsp23&#39; appear to be non-stochastic; they
+## will not be included in the convergence diagnostic
+## Calculating the Gelman-Rubin statistic for 14 variables....
+## Finished running the simulation
+# plot(results_complete)
+results_complete
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                                
+##         Lower95  Median Upper95    Mean        SD Mode      MCerr MC%ofSD SSeff
+## se[1]    0.7641 0.82239 0.87517 0.82144  0.028816   -- 0.00027411       1 11051
+## se[2]   0.87362 0.91976 0.96012 0.91784  0.022328   -- 0.00022549       1  9805
+## se[3]   0.91453  0.9504 0.98166 0.94879  0.017642   -- 0.00018554     1.1  9041
+## sp[1]   0.93729 0.96168 0.98213 0.96066  0.011745   --  0.0001158       1 10287
+## sp[2]   0.96967 0.98707 0.99999  0.9858 0.0086809   -- 0.00010232     1.2  7198
+## sp[3]   0.92075 0.94919 0.97669  0.9483  0.014365   -- 0.00014143       1 10315
+## prev[1] 0.23659  0.2937 0.35394 0.29429  0.030129   -- 0.00027334     0.9 12149
+## prev[2] 0.42157 0.48329 0.54141 0.48342  0.030477   -- 0.00028314     0.9 11586
+## covse12       0       0       0       0         0    0         --      --    --
+## covsp12       0       0       0       0         0    0         --      --    --
+## covse13       0       0       0       0         0    0         --      --    --
+## covsp13       0       0       0       0         0    0         --      --    --
+## covse23       0       0       0       0         0    0         --      --    --
+## covsp23       0       0       0       0         0    0         --      --    --
+##                            
+##               AC.10    psrf
+## se[1]   -0.00054586  1.0001
+## se[2]     0.0018981       1
+## se[3]     0.0074038  1.0004
+## sp[1]     -0.011512  1.0002
+## sp[2]      0.010497  1.0003
+## sp[3]     -0.013852  1.0009
+## prev[1]   0.0039087 0.99996
+## prev[2] -0.00020744       1
+## covse12          --      --
+## covsp12          --      --
+## covse13          --      --
+## covsp13          --      --
+## covse23          --      --
+## covsp23          --      --
+## 
+## Total time taken: 2.6 seconds</code></pre>
+<p>The posteriors for the dataset using only complete observations are wider than those for the full data. This is not entirely surprising as we only have 513 complete observations compared to 993 observations with 1 or more test result!</p>
+<p>However, because the missing results are MCAR, there is no (substantial) shift in the posterior distribution of parameter estimates.</p>
+</div>
+<div id="exercise-2" class="section level2 fragile">
+<h2 class="fragile">Exercise 2</h2>
+<p>Think about the following examples of missingness (all with 3 tests and 2 populations):</p>
+<ol style="list-style-type: decimal">
+<li><p>You collected data for all 3 tests from both populations, but one batch of the test kits turned out to be contaminated so the results for one of the tests are unusable for a proportion of the individuals.</p></li>
+<li><p>Population 1 has all 3 tests, but population 2 is missing the third test results because the study ran out of money.</p></li>
+<li><p>Test 2 is a milk test, which can only be performed on lactating animals, but both populations consist of a mixture of milking cows, dry cows and younger animals from the same farm. You have recorded the age of the animals in the data.</p></li>
+<li><p>You are using passive surveillance data from two countries that use the same 3 tests for an infectious respiratory disease. The reason that each individual is being tested, including presenting signs, is unknown. The majority of individuals have a result for test 1, a smaller proportion have a result for test 2, and relatively few have results for test 3. Test 2 was used as a confirmatory test following a positive result for test 1 in most of the individuals, but not all.</p></li>
+</ol>
+<p>For each of these examples, decide if the data are MCAR, MAR, or MNAR. Would it be safe to proceed with a basic 3-test, 2-population analysis in each case?</p>
+</div>
+<div id="solution-2" class="section level2 fragile">
+<h2 class="fragile">Solution 2</h2>
+<p>Here are the key features of each example:</p>
+<ol style="list-style-type: decimal">
+<li><p>This is either MCAR or MAR, depending on how the tests were distributed between populations by batch. If the batch was used for both populations randomly, then we have MCAR. Otherwise if mostly one population or the other was affected by the bad batch, then we have MAR, but as long as the batch was not confounded by possible disease status within population, then we can safely analyse the data as if it were MCAR. If there is reason to believe that a specific type of individual is more likely to have been affected by missingness then we may have to proceed with only complete observations.</p></li>
+<li><p>This is definitely MAR, but the difference between populations is accounted for by the prevalence parameter. So we are safe to analyse the data.</p></li>
+<li><p>There are probably good reasons to expect that prevalence is correlated with age, which is a reflection of the animals’ milking status. But we may be able to account for this using a predictor of age on the prevalence (see session 7), in which case we have MAR and can proceed with the analysis. However, it would be extremely smart to assess the impact of including only complete observations (i.e. milking animals only) in the analysis. Be prepared for the unwelcome realisation that the sensitivity and/or specificity of one of the other two tests may depend on the age of the animal.</p></li>
+<li><p>There are a lot of unknowns here, so the data is MNAR. Of particular concern is the fact that test 2 was used as a follow-up test based on a positive result from test 1 in a proportion of the individuals: this breaks the key assumption of conditional independence between tests. Without some additional information about <em>why</em> the individuals were being tested, it may be impossible to analyse this data safely. It is not even safe to include only complete observations due to the broken assumption of conditional independence.</p></li>
+</ol>
+</div>
+<div id="optional-exercise-a" class="section level2 fragile">
+<h2 class="fragile">Optional exercise A</h2>
+<p>For this exercise you will need the 3-test, 3-population dataset provided as “anthrax.Rdata” under day 3. This dataset contains the result of 3 anthrax tests on cattle carcasses from 3 populations:</p>
+<ul>
+<li>PMB (polychrome methylene blue) is a stain used to help detect the capsule of anthrax bacteria on blood smears</li>
+<li>AzureB is a similar stain that is easier to perform in low resource settings</li>
+<li>qPCR is a test for DNA of the anthrax bacteria</li>
+</ul>
+<p>All populations consistent of carcasses reported as sudden death events in extensively farmed cattle in 3 different populated areas surrounding the Serengeti national park. The samples from populations 1 and 2 consisted of blood smears taken directly from the carcasses, while the samples for population 3 consisted of blood smears made from blood swabs taken from the carcasses. qPCR resutls were obtain from fragments of blood scraped from the blood smears.</p>
+<p>Analyse the data using minimally informative priors for all parameters. Try to identify any potential pairwise correlations between the tests:</p>
+<ul>
+<li>Based on biological reasoning</li>
+<li>Based on empirical evidence</li>
+</ul>
+<p>Exclude one population at a time and re-analyse the data. What do you notice about your assumption of constant sensitivity and specificity across populations?</p>
+</div>
+<div id="solution-a" class="section level2 fragile">
+<h2 class="fragile">Solution A</h2>
+<p>TODO</p>
+</div>
+<div id="optional-exercise-b" class="section level2 fragile">
+<h2 class="fragile">Optional exercise B</h2>
+<p>Simulate the following dataset:</p>
+<pre class="r"><code>set.seed(2021-06-30)
+N &lt;- 10000
+sensitivity &lt;- c(0.4, 0.95)
+specificity &lt;- c(0.95, 0.99)
+prevalence &lt;- 0.01
+
+follow_up &lt;- tibble(Status = rbinom(N, 1, prevalence)) %&gt;%
+  mutate(Test1 = rbinom(n(), 1, Status*sensitivity[1] + (1-Status)*(1-specificity[1]))) %&gt;%
+  mutate(Test2 = rbinom(n(), 1, Status*sensitivity[2] + (1-Status)*(1-specificity[2]))) %&gt;%
+  mutate(Test2 = case_when(
+    Test1==0 ~ NA_integer_,
+    TRUE ~ Test2
+  )) %&gt;%
+  select(-Status)
+
+follow_up %&gt;% head()
+## # A tibble: 6 x 2
+##   Test1 Test2
+##   &lt;int&gt; &lt;int&gt;
+## 1     0    NA
+## 2     0    NA
+## 3     0    NA
+## 4     0    NA
+## 5     0    NA
+## 6     0    NA
+follow_up %&gt;% count(Test1, Test2)
+## # A tibble: 3 x 3
+##   Test1 Test2     n
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1     0    NA  9467
+## 2     1     0   501
+## 3     1     1    32</code></pre>
+<p>As you can see, Test2 is taken as a positive follow-up for Test1 <em>on the condition that Test1 is positive</em>.</p>
+<p>What information can you potentially extract from this data using minimally informative priors for all parameters?</p>
+<p>Now let’s say that you can use a Beta(44.21, 2.64) prior for sensitivity and a Beta(79.52, 1.13) prior for specificity of the second test. What information can you extract now regarding the first test?</p>
+</div>
+</div>
+<div id="solution-b" class="section level1 fragile">
+<h1 class="fragile">Solution B</h1>
+<p>One of our usual degrees of freedom is missing, so effectively we have 2 data points from which we would like to estimate as many as 5 parameters. It is therefore completely impossible to extract any useful information from this data using minimally informative priors.</p>
+<p>We do know the proportion of Test1 positive individuals that tested positive with Test2, so intuitively you might expect that we can assess the specificity of Test1. This is true, assuming that we have extremely strong priors for the sensitivity and specificity of Test2. For example:</p>
+<pre><code>
+model{
+  
+  Tally[1:2] ~ dmulti(prob[1:2], N)
+  
+  # The probability of Test2- conditional on prevalence in the Test1+ group
+  prob[1] &lt;- prev*(1-se) + (1-prev)*sp
+
+  # The probability of Test2+ conditional on prevalence in the Test1+ group
+  prob[2] &lt;- prev*se + (1-prev)*(1-sp)
+  
+  # Minimally informative prior for prevalence in the Test1+ group:
+  prev ~ dbeta(1,1)
+  
+  # Informative priors for Se and Sp:
+  se ~ dbeta(44.21, 2.64)
+  sp ~ dbeta(79.52, 1.13)
+
+  #data# Tally, N
+  #monitor# se, sp, prev
+  #inits# se, sp, prev
+}</code></pre>
+<p>This model will run and give some inference on the true prevalence in the Test1+ group:</p>
+<pre class="r"><code>Tally &lt;- follow_up %&gt;%
+  filter(!is.na(Test2)) %&gt;%
+  count(Test2) %&gt;%
+  arrange(Test2) %&gt;%
+  pull(n)
+N &lt;- sum(Tally)
+
+se &lt;- list(chain1=0.5, chain2=0.99)
+sp &lt;- list(chain1=0.99, chain2=0.5)
+prev &lt;- list(chain1=0.1, chain2=0.9)
+
+results &lt;- run.jags(&quot;confirmation_test_model.txt&quot;, n.chains=2)
+## Compiling rjags model...
+## Calling the simulation using the rjags method...
+## Adapting the model for 1000 iterations...
+## Burning in the model for 4000 iterations...
+## Running the model for 10000 iterations...
+## Simulation complete
+## Calculating summary statistics...
+## Calculating the Gelman-Rubin statistic for 3 variables....
+## Finished running the simulation
+results
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                                
+##       Lower95   Median  Upper95     Mean       SD Mode      MCerr MC%ofSD SSeff
+## se    0.87508  0.94883  0.99531  0.94208  0.03427   -- 0.00040196     1.2  7269
+## sp    0.96325  0.99001        1  0.98676 0.011516   -- 0.00023331       2  2436
+## prev 0.017484 0.053324 0.083361 0.052243 0.016234   -- 0.00029243     1.8  3082
+##                      
+##          AC.10   psrf
+## se   0.0015577      1
+## sp      0.1073      1
+## prev   0.07886 1.0001
+## 
+## Total time taken: 0.4 seconds</code></pre>
+<p>Note that <em>prevalence in the test 1 positive group</em> is the same as the positive predictive value of test 1 in the overall population. This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.</p>
+<p>You might have noticed that we are completely ignoring the Test1 negative samples. That is because they contain no useful information: we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.</p>
 <div id="summary" class="section level2 fragile">
 <h2 class="fragile">Summary</h2>
 <ul>

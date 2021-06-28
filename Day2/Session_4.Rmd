@@ -33,7 +33,9 @@ source("../rsc/setup.R")
 
 In *traditional* diagnostic test evaluation, one test is assumed to be a gold standard from which all other tests are evaluated
 
-So it makes no difference if you assess one test at a time or do multiple tests at the same time
+  - So it makes no difference if you assess one test at a time or do multiple tests at the same time
+
+. . .
 
 Using a latent class model each new test adds new information - so we should analyse all available test results in the same model
 
@@ -262,11 +264,13 @@ This generates self-contained model/data/initial values etc
 cleanup <- c(cleanup, 'covidmodel.txt')
 cat(readLines('covidmodel.txt')[3:111], sep='\n')
 ```
+
 ---
 
 ```{r echo=FALSE, comment=''}
 cat(readLines('covidmodel.txt')[-(1:111)], sep='\n')
 ```
+
 ---
 
 And can be run directly from R:
@@ -544,13 +548,6 @@ The effective sample size is much lower, because the model is less identifiable.
   - Other test Se / Sp
   - Prevalence
 
-## Homework
-
-Think about what exactly the latent class is in these situations:
-
-1. An antigen plus antibody test
-
-1. Two antibody tests 
 
 ```{r include=FALSE}
 unlink(cleanup)

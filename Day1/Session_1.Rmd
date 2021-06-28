@@ -96,7 +96,7 @@ Contact:  info@harmony-net.eu
 - All of the material is on the GitHub repository
   - We may tweak material as we go along
   - Remember to pull changes at the start of each day!
-
+  - And click *refresh* in your browser!
 . . .
 
 - Recordings of the sessions will put onto our website

@@ -7,6 +7,9 @@
 library("tidyverse")
 library("runjags")
 library("knitr")
+runjags.options(silent.jags=TRUE, silent.runjags=TRUE)
+
+theme_set(theme_light())
 
 set.seed(2021-06-22)
 

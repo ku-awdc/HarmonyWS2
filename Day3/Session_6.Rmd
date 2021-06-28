@@ -26,109 +26,551 @@ rmarkdown::render('Session_6.Rmd', 'html_document', params=list(presentation=FAL
 ```
 
 ```{r setup, include=FALSE}
-library("tidyverse")
-library("runjags")
-set.seed(2021-06-22)
-
-# Reduce the width of R code output for PDF only:
-if(params$presentation) options(width=60)
-knitr::opts_chunk$set(echo = TRUE)
-
-# Reduce font size of R code output for Beamer:
-if(params$presentation){
-  knitr::knit_hooks$set(size = function(before, options, envir) {
-    if(before){
-      knitr::asis_output(paste0("\\", options$size))
-    }else{
-      knitr::asis_output("\\normalsize")
-    }
-  })
-  knitr::opts_chunk$set(size = "scriptsize")
-}
-
-# Collapse successive chunks:
-space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
-# Reduce space between chunks:
-space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
-knitr::knit_hooks$set(document = space_collapse)
-
-# To collect temporary filenames:
-cleanup <- character(0)
+source("../rsc/setup.R")
 ```
 
-# Session 6:  Coping with missing data
-
-## Outline
-
-- When tests are missing at random -> easy (template_huiwalter)
-
-- When tests are missing structurally -> does the test missingness correspond with expected prevalence?
-
-- Removing data for cross-validation purposes
 
 ## Types of missingness
 
-- MCAR:  Missing completely at random
-  - There is absolutely no pattern to the missingness eg:
-    - The animal was too aggressive to facilitate a blood sample
-    - Somebody dropped the samples on the way to the PCR machine
+MCAR:  Missing completely at random
+
+  - There is absolutely no pattern to the missingness
   - This is the best kind
   
 . . .
 
-- MAR:  Missing at random
-  - There is a pattern to the missingness but we can explain it eg:
-    - Test A was not done in population 1 because of financial limitations
-    - Test B was only done if Test A was positive
-  - We need to either include the explanation in the model, or ensure that it is not confounded with expected disease status
+MAR:  Missing at random
+
+  - There is a pattern to the missingness but we know what it is
+  - This is usually possible to deal with but needs some consideration
+
+. . .
+
+MNAR:  Missing not at random
+
+  - There is an unknown (or unrecorded) pattern to the missingness
+  - It is therefore possible that the prevalence is confounded with missingness
+  
+
+
+## MCAR:  Missing completely at random
+
+Missing samples can occur for any individual with equal probability
+
+  - Missingness is not correlated with anything
+  - There is no possibility of being confounded with prevalence
+
+. . .
+
+Examples
+
+  - The animal was too aggressive to facilitate a blood sample
+  - Somebody dropped the samples on the way to the lab
+
+. . .
+
+Possible solutions:
+
+  - Exclude individuals with incomplete data
+  - Allow `template_huiwalter` to adjust the model code
+
+. . .
+
+This is a relatively rare kind of missingness, but it does happen
+
+## MAR:  Missing at random
+
+Missing samples occur due to a known pattern
+
+  - We can (and must) assess if this is likely be correlated with prevalence
+
+. . .
+
+Examples:
+
+  - Test A was not done in population 1 because of costs
+  - Test B was only done if Test A was positive
+
+. . .
+
+Solution depends on whether the the missigness is potentially confounded with prevalence
+
+  - No -> treat as MCAR
+  - Yes -> we must model the confounding
   
 . . .
 
-- MNAR:  Missing not at random
-  - There is an unknown (or unrecorded) pattern to the missingness eg:
-    - Test B was only done if the animal had diahorrea
-    - The individual patient was given a choice if they wanted Test B after knowing the result of Test A
-  - This is a bad situation because the prevalence may be confounded with missingness
+Very common type of missingness in practice
 
 
+## MNAR:  Missing not at random
 
+Missing samples occur due to an unknown pattern
+
+  - We must assume that this might be correlated with prevalence
+
+. . .
+
+Examples:
+
+  - Test B was only done if the animal had diarrhea
+  - The individual patient was given a choice if they wanted Test B after knowing the result of Test A
+
+. . .
+
+Possible solutions:
+
+  - Exclude segments of the data that may be affected by structural missingness
+  - Give up and collect a better dataset
+  
+. . .
+
+A common type of missingness in secondary data
+
+
+## Missingness and template Hui-Walter
+
+We can simulate MCAR data as follows:
+
+
+```{r}
+set.seed(2021-06-30)
+# Parameter values to simulate:
+N <- 1000
+sensitivity <- c(0.8, 0.9, 0.95)
+specificity <- c(0.95, 0.99, 0.95)
+
+Populations <- 2
+prevalence <- c(0.25,0.5)
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %>%
+  mutate(Test3 = rbinom(N, 1, sensitivity[3]*Status + (1-specificity[3])*(1-Status))) %>%
+  select(-Status)
+```
+
+- - -
+
+Now introduce missingness in all 3 tests:
+
+```{r}
+missingness <- c(0.1, 0.2, 0.3)
+data <- data %>%
+  mutate(Test1 = case_when(
+    rbinom(n(), 1, missingness[1]) == 1L ~ NA_integer_,
+    TRUE ~ Test1
+  )) %>%
+  mutate(Test2 = case_when(
+    rbinom(n(), 1, missingness[2]) == 1L ~ NA_integer_,
+    TRUE ~ Test2
+  )) %>%
+  mutate(Test3 = case_when(
+    rbinom(n(), 1, missingness[3]) == 1L ~ NA_integer_,
+    TRUE ~ Test3
+  ))
+```
+
+- - -
+
+```{r}
+data %>% count(Missing1 = is.na(Test1), Missing2 = is.na(Test2), Missing3 = is.na(Test3))
+```
+
+- - -
+
+We can simply feed this data to `template_huiwalter`:
+
+```{r}
+template_huiwalter(data, outfile="huiwalter_MAR.txt")
+```
+
+What does that look like...?
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[3:12], sep="\n")
+```
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[22:36], sep="\n")
+```
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[38:56], sep="\n")
+```
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[58:66], sep="\n")
+```
+
+. . .
+
+NB:  `MMM` combinations have been removed!
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[69:113], sep="\n")
+```
+
+- - -
+
+```{r echo=FALSE, comment=''}
+cleanup <- c(cleanup, "huiwalter_MAR.txt")
+cat(readLines("huiwalter_MAR.txt")[190:207], sep="\n")
+```
+
+## What about other types of missing?
+
+MAR:
+
+  - As for MCAR
+  - As long as the randomness structure is not confounded with prevalence!
+
+. . .
+
+MNAR:
+
+  - Solution depends entirely on the problem
+  - And sometimes there is no solution...
+
+. . .
+
+But remember:  bigger datasets are not always better datasets...
+
+
+## Making your data missing
+
+What happens if we eliminate:
+
+  - One population at a time (where we have >2)?
+  - One test at a time (where we have >2)?
+
+. . .
+
+Do the results change?
+
+. . .
+
+If we have >2 populations *and* >2 tests then we can eliminate one combination at a time!
+
+. . .
+
+This is a very useful form of cross-validation
+
+
+- - -
+
+How can we do this?
+
+```{r}
+all_combinations <- data %>%
+  pivot_longer(-Population, names_to = "Test", values_to = "Result") %>%
+  filter(!is.na(Result)) %>%
+  count(Population, Test) %>%
+  print()
+
+all_results <- vector('list', length=nrow(all_combinations))
+all_summary <- vector('list', length=nrow(all_combinations))
+```
+
+- - -
+
+```{r results='hide'}
+crossval_data <- data %>%
+  mutate(Test1 = case_when(
+    Population == 1 ~ NA_integer_,
+    TRUE ~ Test1
+  ))
+
+template_huiwalter(crossval_data, "model_m11.txt")
+all_results[[1]] <- run.jags("model_m11.txt")
+all_summary[[1]] <- summary(all_results[[1]], vars="^s") %>%
+  as.data.frame() %>%
+  rownames_to_column("Parameter") %>%
+  mutate(Model = "M11") %>%
+  select(Model, Parameter, Median, Lower95, Upper95)
+```
+
+- - -
+
+```{r}
+all_summary[[1]]
+```
+
+- - -
+
+```{r results='hide'}
+crossval_data <- data %>%
+  mutate(Test2 = case_when(
+    Population == 1 ~ NA_integer_,
+    TRUE ~ Test2
+  ))
+
+template_huiwalter(crossval_data, "model_m12.txt")
+all_results[[2]] <- run.jags("model_m12.txt")
+all_summary[[2]] <- summary(all_results[[2]], vars="^s") %>%
+  as.data.frame() %>%
+  rownames_to_column("Parameter") %>%
+  mutate(Model = "M11") %>%
+  select(Model, Parameter, Median, Lower95, Upper95)
+```
+
+```{r echo=FALSE}
+cleanup <- c(cleanup, "model_m11.txt", "model_m12.txt")
+```
+
+- - -
+
+Are there any substantial disagreements:
+
+```{r}
+bind_rows(all_summary) %>%
+  arrange(Parameter, Model)
+```
 
 # Practical session 6
 
 ## Points to consider {.fragile}
 
-1. How does missing-at-random data impact your results?
+1. How does MCAR data impact your results?
 
 1. What about if you have data using confirmatory tests?
 
 1. How can we use cross-validation as a method of checking assumptions?
 
 
-`r if(params$presentation) {"\\begin{comment}"}`
+`r exercise_start()`
 
-## Exercise plan TODO
+## Exercise 1 {.fragile}
 
-- Simulate data with 3 tests and remove 10%, 25%, 50% of the test results at random
-  - Use template_autohuiwalter
-  - Also do the same but this time remove 1 test from 1 population
-  - Posterior variance increases but no strong bias
+Simulate a 3-test 2-population dataset with MCAR data using the R code given above.  Generate a model file and make sure you understand what is going on.  For the sake of simplicity you may assume that the 3 tests are conditionally independent!
+
+Run the model using the default priors and analyse the results.
+
+Now retain only the complete observations and re-run the model
+
+  - How do the results compare to using all available data?
+
+
+## Solution 1 {.fragile}
+
+Here is the code from above:
+
+```{r}
+set.seed(2021-06-30)
+
+# Parameter values to simulate:
+N <- 1000
+sensitivity <- c(0.8, 0.9, 0.95)
+specificity <- c(0.95, 0.99, 0.95)
+
+Populations <- 2
+prevalence <- c(0.25,0.5)
+missingness <- c(0.1, 0.2, 0.3)
+
+data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
+  mutate(Status = rbinom(N, 1, prevalence[Population])) %>%
+  mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
+  mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status))) %>%
+  mutate(Test3 = rbinom(N, 1, sensitivity[3]*Status + (1-specificity[3])*(1-Status))) %>%
+  select(-Status)
+
+data <- data %>%
+  mutate(Test1 = case_when(
+    rbinom(n(), 1, missingness[1]) == 1L ~ NA_integer_,
+    TRUE ~ Test1
+  )) %>%
+  mutate(Test2 = case_when(
+    rbinom(n(), 1, missingness[2]) == 1L ~ NA_integer_,
+    TRUE ~ Test2
+  )) %>%
+  mutate(Test3 = case_when(
+    rbinom(n(), 1, missingness[3]) == 1L ~ NA_integer_,
+    TRUE ~ Test3
+  ))
+
+data %>% count(Missing1 = is.na(Test1), Missing2 = is.na(Test2), Missing3 = is.na(Test3))
+
+template_huiwalter(data, outfile="huiwalter_MAR_all.txt")
+
+results_all <- run.jags("huiwalter_MAR_all.txt")
+
+# plot(results_all)
+results_all
+```
+
+We can run the same model with only complete observations as follows:
+
+```{r}
+template_huiwalter(data %>% na.omit(), outfile="huiwalter_MAR_complete.txt")
+
+results_complete <- run.jags("huiwalter_MAR_complete.txt")
+
+# plot(results_complete)
+results_complete
+```
+
+```{r echo=FALSE}
+cleanup <- c(cleanup, "huiwalter_MAR_complete.txt", "huiwalter_MAR_all.txt")
+```
+
+The posteriors for the dataset using only complete observations are wider than those for the full data. This is not entirely surprising as we only have `r data %>% na.omit() %>% nrow()` complete observations compared to `r data %>% filter(!is.na(Test1) | !is.na(Test2) | !is.na(Test3)) %>% nrow()` observations with 1 or more test result!
+
+However, because the missing results are MCAR, there is no (substantial) shift in the posterior distribution of parameter estimates.
+
+## Exercise 2 {.fragile}
+
+Think about the following examples of missingness (all with 3 tests and 2 populations):
+
+1.  You collected data for all 3 tests from both populations, but one batch of the test kits turned out to be contaminated so the results for one of the tests are unusable for a proportion of the individuals.
+
+1.  Population 1 has all 3 tests, but population 2 is missing the third test results because the study ran out of money.
+
+1.  Test 2 is a milk test, which can only be performed on lactating animals, but both populations consist of a mixture of milking cows, dry cows and younger animals from the same farm.  You have recorded the age of the animals in the data.
+
+1.  You are using passive surveillance data from two countries that use the same 3 tests for an infectious respiratory disease. The reason that each individual is being tested, including presenting signs, is unknown. The majority of individuals have a result for test 1, a smaller proportion have a result for test 2, and relatively few have results for test 3. Test 2 was used as a confirmatory test following a positive result for test 1 in most of the individuals, but not all.
+
+For each of these examples, decide if the data are MCAR, MAR, or MNAR. Would it be safe to proceed with a basic 3-test, 2-population analysis in each case?
+
+
+## Solution 2 {.fragile}
+
+Here are the key features of each example:
+
+1.  This is either MCAR or MAR, depending on how the tests were distributed between populations by batch.  If the batch was used for both populations randomly, then we have MCAR. Otherwise if mostly one population or the other was affected by the bad batch, then we have MAR, but as long as the batch was not confounded by possible disease status within population, then we can safely analyse the data as if it were MCAR. If there is reason to believe that a specific type of individual is more likely to have been affected by missingness then we may have to proceed with only complete observations.
+
+1.  This is definitely MAR, but the difference between populations is accounted for by the prevalence parameter.  So we are safe to analyse the data.
+
+1.  There are probably good reasons to expect that prevalence is correlated with age, which is a reflection of the animals' milking status. But we may be able to account for this using a predictor of age on the prevalence (see session 7), in which case we have MAR and can proceed with the analysis. However, it would be extremely smart to assess the impact of including only complete observations (i.e. milking animals only) in the analysis.  Be prepared for the unwelcome realisation that the sensitivity and/or specificity of one of the other two tests may depend on the age of the animal.
+
+1.  There are a lot of unknowns here, so the data is MNAR. Of particular concern is the fact that test 2 was used as a follow-up test based on a positive result from test 1 in a proportion of the individuals:  this breaks the key assumption of conditional independence between tests. Without some additional information about *why* the individuals were being tested, it may be impossible to analyse this data safely. It is not even safe to include only complete observations due to the broken assumption of conditional independence.
+
+
+## Optional exercise A {.fragile}
+
+For this exercise you will need the 3-test, 3-population dataset provided as "anthrax.Rdata" under day 3. This dataset contains the result of 3 anthrax tests on cattle carcasses from 3 populations:
+
+  - PMB (polychrome methylene blue) is a stain used to help detect the capsule of anthrax bacteria on blood smears
+  - AzureB is a similar stain that is easier to perform in low resource settings
+  - qPCR is a test for DNA of the anthrax bacteria
   
-- Simulate data with 2 tests but only keep the 2nd test when the 1st is positive
-  - We now have no data on the Sp of the 2nd test
-  - Strong priors for 1st test Se and Sp are also required
+All populations consistent of carcasses reported as sudden death events in extensively farmed cattle in 3 different populated areas surrounding the Serengeti national park. The samples from populations 1 and 2 consisted of blood smears taken directly from the carcasses, while the samples for population 3 consisted of blood smears made from blood swabs taken from the carcasses. qPCR resutls were obtain from fragments of blood scraped from the blood smears.
 
-- Simulate data from multiple populations where
-  - They have consistent Se/Sp
-  - One has different Se/Sp
-  - Use cross-validation (remove Tally for 1 pop at a time) to assess
+Analyse the data using minimally informative priors for all parameters.  Try to identify any potential pairwise correlations between the tests:
+
+  - Based on biological reasoning
+  - Based on empirical evidence
+
+Exclude one population at a time and re-analyse the data.  What do you notice about your assumption of constant sensitivity and specificity across populations?
+
+
+## Solution A {.fragile}
+
+TODO
+
+## Optional exercise B {.fragile}
+
+Simulate the following dataset:
+
+```{r}
+set.seed(2021-06-30)
+N <- 10000
+sensitivity <- c(0.4, 0.95)
+specificity <- c(0.95, 0.99)
+prevalence <- 0.01
+
+follow_up <- tibble(Status = rbinom(N, 1, prevalence)) %>%
+  mutate(Test1 = rbinom(n(), 1, Status*sensitivity[1] + (1-Status)*(1-specificity[1]))) %>%
+  mutate(Test2 = rbinom(n(), 1, Status*sensitivity[2] + (1-Status)*(1-specificity[2]))) %>%
+  mutate(Test2 = case_when(
+    Test1==0 ~ NA_integer_,
+    TRUE ~ Test2
+  )) %>%
+  select(-Status)
+
+follow_up %>% head()
+follow_up %>% count(Test1, Test2)
+```
+
+As you can see, Test2 is taken as a positive follow-up for Test1 *on the condition that Test1 is positive*.  
+
+What information can you potentially extract from this data using minimally informative priors for all parameters?
+
+Now let's say that you can use a Beta(44.21, 2.64) prior for sensitivity and a Beta(79.52, 1.13) prior for specificity of the second test.  What information can you extract now regarding the first test?
+
+
+# Solution B {.fragile}
+
+One of our usual degrees of freedom is missing, so effectively we have 2 data points from which we would like to estimate as many as 5 parameters. It is therefore completely impossible to extract any useful information from this data using minimally informative priors. 
+
+We do know the proportion of Test1 positive individuals that tested positive with Test2, so intuitively you might expect that we can assess the specificity of Test1.  This is true, assuming that we have extremely strong priors for the sensitivity and specificity of Test2.  For example:
+
+```{r echo=FALSE, comment=''}
+confmodel <- "
+model{
   
-Optional:
+  Tally[1:2] ~ dmulti(prob[1:2], N)
+  
+  # The probability of Test2- conditional on prevalence in the Test1+ group
+  prob[1] <- prev*(1-se) + (1-prev)*sp
 
-- Simulate a more complex 2-test dataset where the second test is taken conditional on an unknown motivation of the individual following a first test result
-  - Use Covid example of optional PCR following antigen test, where different groups have different motivations, but the motivation is not known
-  - Assuming it is missing at random gives misleading results
+  # The probability of Test2+ conditional on prevalence in the Test1+ group
+  prob[2] <- prev*se + (1-prev)*(1-sp)
+  
+  # Minimally informative prior for prevalence in the Test1+ group:
+  prev ~ dbeta(1,1)
+  
+  # Informative priors for Se and Sp:
+  se ~ dbeta(44.21, 2.64)
+  sp ~ dbeta(79.52, 1.13)
 
-`r if(params$presentation) {"\\end{comment}"}`
+  #data# Tally, N
+  #monitor# se, sp, prev
+  #inits# se, sp, prev
+}"
+cat(confmodel, file="confirmation_test_model.txt")
+cat(confmodel)
+```
+
+This model will run and give some inference on the true prevalence in the Test1+ group:
+
+```{r}
+Tally <- follow_up %>%
+  filter(!is.na(Test2)) %>%
+  count(Test2) %>%
+  arrange(Test2) %>%
+  pull(n)
+N <- sum(Tally)
+
+se <- list(chain1=0.5, chain2=0.99)
+sp <- list(chain1=0.99, chain2=0.5)
+prev <- list(chain1=0.1, chain2=0.9)
+
+results <- run.jags("confirmation_test_model.txt", n.chains=2)
+results
+```
+
+Note that *prevalence in the test 1 positive group* is the same as the positive predictive value of test 1 in the overall population.  This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.
+
+You might have noticed that we are completely ignoring the Test1 negative samples.  That is because they contain no useful information:  we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.
+
+
+`r exercise_end()`
 
 
 ## Summary {.fragile}

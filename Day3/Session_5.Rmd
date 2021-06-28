@@ -26,34 +26,7 @@ rmarkdown::render('Session_5.Rmd', 'html_document', params=list(presentation=FAL
 ```
 
 ```{r setup, include=FALSE}
-library("tidyverse")
-library("runjags")
-set.seed(2021-06-22)
-
-# Reduce the width of R code output for PDF only:
-if(params$presentation) options(width=60)
-knitr::opts_chunk$set(echo = TRUE)
-
-# Reduce font size of R code output for Beamer:
-if(params$presentation){
-  knitr::knit_hooks$set(size = function(before, options, envir) {
-    if(before){
-      knitr::asis_output(paste0("\\", options$size))
-    }else{
-      knitr::asis_output("\\normalsize")
-    }
-  })
-  knitr::opts_chunk$set(size = "scriptsize")
-}
-
-# Collapse successive chunks:
-space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
-# Reduce space between chunks:
-space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
-knitr::knit_hooks$set(document = space_collapse)
-
-# To collect temporary filenames:
-cleanup <- character(0)
+source("../rsc/setup.R")
 ```
 
 ## Recap
@@ -71,7 +44,7 @@ cleanup <- character(0)
 
 ## What exactly is our latent class?
 
-Homework (reminder):  think about what exactly the latent class is in these situations:
+Think about what exactly the latent class is in these situations:
 
 1. An antigen plus antibody test
 
@@ -90,7 +63,7 @@ Homework (reminder):  think about what exactly the latent class is in these situ
   
 . . .
 
-- What do we mean by "conditionally independent" (revisited) ?
+- What do we mean by "conditionally independent"?
 
   * Independent of each other conditional on the latent state
   * But the latent state is NOT always *disease*

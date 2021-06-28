@@ -1,0 +1,22 @@
+
+model{
+  
+  Tally[1:2] ~ dmulti(prob[1:2], N)
+  
+  # The probability of Test2- conditional on prevalence in the Test1+ group
+  prob[1] <- prev*(1-se) + (1-prev)*sp
+
+  # The probability of Test2+ conditional on prevalence in the Test1+ group
+  prob[2] <- prev*se + (1-prev)*(1-sp)
+  
+  # Minimally informative prior for prevalence in the Test1+ group:
+  prev ~ dbeta(1,1)
+  
+  # Informative priors for Se and Sp:
+  se ~ dbeta(44.21, 2.64)
+  sp ~ dbeta(79.52, 1.13)
+
+  #data# Tally, N
+  #monitor# se, sp, prev
+  #inits# se, sp, prev
+}
