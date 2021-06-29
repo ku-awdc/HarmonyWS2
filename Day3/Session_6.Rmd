@@ -105,7 +105,7 @@ Very common type of missingness in practice
 
 ## MNAR:  Missing not at random
 
-Missing samples occur due to an unknown pattern
+Missing samples occur due to an unknown/unrecorded pattern
 
   - We must assume that this might be correlated with prevalence
 
@@ -113,8 +113,8 @@ Missing samples occur due to an unknown pattern
 
 Examples:
 
-  - Test B was only done if the animal had diarrhea
-  - The individual patient was given a choice if they wanted Test B after knowing the result of Test A
+  - Test B was only done if the animal had (unrecorded) diarrhea
+  - Some patients choose to have Test B after knowing the result of Test A
 
 . . .
 
@@ -199,14 +199,14 @@ cat(readLines("huiwalter_MAR.txt")[3:12], sep="\n")
 
 ```{r echo=FALSE, comment=''}
 cleanup <- c(cleanup, "huiwalter_MAR.txt")
-cat(readLines("huiwalter_MAR.txt")[22:36], sep="\n")
+cat(readLines("huiwalter_MAR.txt")[22:37], sep="\n")
 ```
 
 - - -
 
 ```{r echo=FALSE, comment=''}
 cleanup <- c(cleanup, "huiwalter_MAR.txt")
-cat(readLines("huiwalter_MAR.txt")[38:56], sep="\n")
+cat(readLines("huiwalter_MAR.txt")[39:57], sep="\n")
 ```
 
 - - -
@@ -259,18 +259,13 @@ What happens if we eliminate:
 
   - One population at a time (where we have >2)?
   - One test at a time (where we have >2)?
-
-. . .
-
-Do the results change?
+  - Do the results change?
 
 . . .
 
 If we have >2 populations *and* >2 tests then we can eliminate one combination at a time!
 
-. . .
-
-This is a very useful form of cross-validation
+  - This is a very useful form of cross-validation
 
 
 - - -
@@ -283,14 +278,14 @@ all_combinations <- data %>%
   filter(!is.na(Result)) %>%
   count(Population, Test) %>%
   print()
-
-all_results <- vector('list', length=nrow(all_combinations))
-all_summary <- vector('list', length=nrow(all_combinations))
 ```
 
 - - -
 
 ```{r results='hide'}
+all_results <- vector('list', length=nrow(all_combinations))
+all_summary <- vector('list', length=nrow(all_combinations))
+
 crossval_data <- data %>%
   mutate(Test1 = case_when(
     Population == 1 ~ NA_integer_,
@@ -333,6 +328,10 @@ all_summary[[2]] <- summary(all_results[[2]], vars="^s") %>%
 ```{r echo=FALSE}
 cleanup <- c(cleanup, "model_m11.txt", "model_m12.txt")
 ```
+
+. . .
+
+etc...!
 
 - - -
 
@@ -569,6 +568,10 @@ results
 Note that *prevalence in the test 1 positive group* is the same as the positive predictive value of test 1 in the overall population.  This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.
 
 You might have noticed that we are completely ignoring the Test1 negative samples.  That is because they contain no useful information:  we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.
+
+```{r echo=FALSE}
+cleanup <- c(cleanup, "confirmation_test_model.txt")
+```
 
 
 `r exercise_end()`

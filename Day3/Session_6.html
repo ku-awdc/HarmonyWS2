@@ -246,15 +246,15 @@ pre code {
 </div>
 <div id="mnar-missing-not-at-random" class="section level2">
 <h2>MNAR: Missing not at random</h2>
-<p>Missing samples occur due to an unknown pattern</p>
+<p>Missing samples occur due to an unknown/unrecorded pattern</p>
 <ul>
 <li>We must assume that this might be correlated with prevalence</li>
 </ul>
 <div class="incremental">
 <p>Examples:</p>
 <ul>
-<li>Test B was only done if the animal had diarrhea</li>
-<li>The individual patient was given a choice if they wanted Test B after knowing the result of Test A</li>
+<li>Test B was only done if the animal had (unrecorded) diarrhea</li>
+<li>Some patients choose to have Test B after knowing the result of Test A</li>
 </ul>
 </div>
 <div class="incremental">
@@ -347,10 +347,10 @@ data &lt;- data %&gt;%
     for(p in 1:Populations){
         Tally_RRM[1:4,p] ~ dmulti(prob_RRM[1:4,p], N_RRM[p])
 
-        prob_RRM[1:4,p] &lt;-  se_prob[c(1,2,3,4),p] + sp_prob[c(1,2,3,4),p] +</code></pre>
+        prob_RRM[1:4,p] &lt;-  se_prob[c(1,2,3,4),p] + sp_prob[c(1,2,3,4),p] +
+                            se_prob[c(5,6,7,8),p] + sp_prob[c(5,6,7,8),p]</code></pre>
 <hr />
-<pre><code>    }
-
+<pre><code>
     # Partial observations (Test1: Missing, Test2: Recorded, Test3: Recorded; N=54):
     for(p in 1:Populations){
         Tally_MRR[1:4,p] ~ dmulti(prob_MRR[1:4,p], N_MRR[p])
@@ -471,15 +471,13 @@ data{
 <ul>
 <li>One population at a time (where we have &gt;2)?</li>
 <li>One test at a time (where we have &gt;2)?</li>
+<li>Do the results change?</li>
 </ul>
 <div class="incremental">
-<p>Do the results change?</p>
-</div>
-<div class="incremental">
 <p>If we have &gt;2 populations <em>and</em> &gt;2 tests then we can eliminate one combination at a time!</p>
-</div>
-<div class="incremental">
-<p>This is a very useful form of cross-validation</p>
+<ul>
+<li>This is a very useful form of cross-validation</li>
+</ul>
 <hr />
 <p>How can we do this?</p>
 <pre class="r"><code>all_combinations &lt;- data %&gt;%
@@ -495,11 +493,12 @@ data{
 ## 3          1 Test3   331
 ## 4          2 Test1   485
 ## 5          2 Test2   427
-## 6          2 Test3   376
-all_results &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))
-all_summary &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))</code></pre>
+## 6          2 Test3   376</code></pre>
 <hr />
-<pre class="r"><code>crossval_data &lt;- data %&gt;%
+<pre class="r"><code>all_results &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))
+all_summary &lt;- vector(&#39;list&#39;, length=nrow(all_combinations))
+
+crossval_data &lt;- data %&gt;%
   mutate(Test1 = case_when(
     Population == 1 ~ NA_integer_,
     TRUE ~ Test1
@@ -516,12 +515,12 @@ all_summary[[1]] &lt;- summary(all_results[[1]], vars=&quot;^s&quot;) %&gt;%
 <hr />
 <pre class="r"><code>all_summary[[1]]
 ##   Model Parameter    Median   Lower95   Upper95
-## 1   M11     se[1] 0.8204175 0.7612776 0.8747150
-## 2   M11     se[2] 0.8941731 0.8401509 0.9454193
-## 3   M11     se[3] 0.9453207 0.9061323 0.9796185
-## 4   M11     sp[1] 0.9710112 0.9386016 0.9971714
-## 5   M11     sp[2] 0.9854793 0.9679483 0.9999947
-## 6   M11     sp[3] 0.9502810 0.9176183 0.9831037</code></pre>
+## 1   M11     se[1] 0.8204021 0.7597184 0.8744364
+## 2   M11     se[2] 0.8947109 0.8405272 0.9443054
+## 3   M11     se[3] 0.9451908 0.9044400 0.9774418
+## 4   M11     sp[1] 0.9707844 0.9391521 0.9979701
+## 5   M11     sp[2] 0.9855564 0.9678128 0.9999998
+## 6   M11     sp[3] 0.9499051 0.9176480 0.9816883</code></pre>
 <hr />
 <pre class="r"><code>crossval_data &lt;- data %&gt;%
   mutate(Test2 = case_when(
@@ -536,23 +535,26 @@ all_summary[[2]] &lt;- summary(all_results[[2]], vars=&quot;^s&quot;) %&gt;%
   rownames_to_column(&quot;Parameter&quot;) %&gt;%
   mutate(Model = &quot;M11&quot;) %&gt;%
   select(Model, Parameter, Median, Lower95, Upper95)</code></pre>
+</div>
+<div class="incremental">
+<p>etc…!</p>
 <hr />
 <p>Are there any substantial disagreements:</p>
 <pre class="r"><code>bind_rows(all_summary) %&gt;%
   arrange(Parameter, Model)
 ##    Model Parameter    Median   Lower95   Upper95
-## 1    M11     se[1] 0.8204175 0.7612776 0.8747150
-## 2    M11     se[1] 0.8267192 0.7706508 0.8813462
-## 3    M11     se[2] 0.8941731 0.8401509 0.9454193
-## 4    M11     se[2] 0.8951462 0.8413079 0.9438230
-## 5    M11     se[3] 0.9453207 0.9061323 0.9796185
-## 6    M11     se[3] 0.9391299 0.8919846 0.9778045
-## 7    M11     sp[1] 0.9710112 0.9386016 0.9971714
-## 8    M11     sp[1] 0.9648652 0.9385321 0.9892440
-## 9    M11     sp[2] 0.9854793 0.9679483 0.9999947
-## 10   M11     sp[2] 0.9772756 0.9488476 0.9999602
-## 11   M11     sp[3] 0.9502810 0.9176183 0.9831037
-## 12   M11     sp[3] 0.9525915 0.9173937 0.9855384</code></pre>
+## 1    M11     se[1] 0.8204021 0.7597184 0.8744364
+## 2    M11     se[1] 0.8263237 0.7694124 0.8802869
+## 3    M11     se[2] 0.8947109 0.8405272 0.9443054
+## 4    M11     se[2] 0.8948770 0.8417601 0.9437436
+## 5    M11     se[3] 0.9451908 0.9044400 0.9774418
+## 6    M11     se[3] 0.9387399 0.8921255 0.9779843
+## 7    M11     sp[1] 0.9707844 0.9391521 0.9979701
+## 8    M11     sp[1] 0.9648997 0.9392609 0.9903368
+## 9    M11     sp[2] 0.9855564 0.9678128 0.9999998
+## 10   M11     sp[2] 0.9776348 0.9490486 0.9999889
+## 11   M11     sp[3] 0.9499051 0.9176480 0.9816883
+## 12   M11     sp[3] 0.9526575 0.9177475 0.9864392</code></pre>
 </div>
 </div>
 <div id="practical-session-6" class="section level1">
@@ -631,38 +633,38 @@ results_all
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                           
 ##         Lower95  Median Upper95    Mean        SD Mode       MCerr MC%ofSD
-## se[1]    0.7856 0.83161 0.87744 0.83118  0.023535   --  0.00024185       1
-## se[2]   0.85718 0.90324 0.94424 0.90213  0.022419   --  0.00023949     1.1
-## se[3]    0.9064 0.94267 0.97539  0.9414  0.017865   --  0.00019156     1.1
-## sp[1]   0.93814  0.9598 0.97902 0.95932  0.010559   --  0.00011398     1.1
-## sp[2]    0.9743 0.98892       1 0.98794 0.0073089   -- 0.000082637     1.1
-## sp[3]    0.9216  0.9486 0.97435 0.94797  0.013541   --  0.00014354     1.1
-## prev[1] 0.21837 0.26017 0.30513 0.26081   0.02201   --  0.00021092       1
-## prev[2] 0.42945  0.4766 0.52331 0.47664  0.024123   --  0.00024618       1
+## se[1]   0.78731 0.83196 0.87754 0.83136  0.023288   --  0.00023664       1
+## se[2]   0.85767 0.90351 0.94567  0.9024   0.02248   --  0.00024878     1.1
+## se[3]   0.90564 0.94257 0.97369 0.94127  0.017752   --  0.00018876     1.1
+## sp[1]   0.93848 0.95998 0.97919 0.95931  0.010524   --  0.00011256     1.1
+## sp[2]   0.97382 0.98897 0.99998 0.98794 0.0074586   -- 0.000090887     1.2
+## sp[3]     0.922 0.94864 0.97451 0.94779  0.013546   --  0.00013972       1
+## prev[1] 0.21668 0.26059  0.3025 0.26084  0.021807   --  0.00020551     0.9
+## prev[2] 0.42887 0.47638 0.52191 0.47624  0.023794   --  0.00023474       1
 ## covse12       0       0       0       0         0    0          --      --
 ## covsp12       0       0       0       0         0    0          --      --
 ## covse13       0       0       0       0         0    0          --      --
 ## covsp13       0       0       0       0         0    0          --      --
 ## covse23       0       0       0       0         0    0          --      --
 ## covsp23       0       0       0       0         0    0          --      --
-##                                  
-##         SSeff       AC.10    psrf
-## se[1]    9469   0.0037902  1.0005
-## se[2]    8763    0.016276       1
-## se[3]    8697  -0.0018995       1
-## sp[1]    8582   0.0036607  1.0001
-## sp[2]    7823    0.014077 0.99997
-## sp[3]    8899 0.000072459  1.0003
-## prev[1] 10889  -0.0069463  1.0002
-## prev[2]  9601  -0.0061461       1
-## covse12    --          --      --
-## covsp12    --          --      --
-## covse13    --          --      --
-## covsp13    --          --      --
-## covse23    --          --      --
-## covsp23    --          --      --
+##                                
+##         SSeff     AC.10    psrf
+## se[1]    9685 0.0018603  1.0002
+## se[2]    8165  0.012691  1.0003
+## se[3]    8844 0.0022882  1.0004
+## sp[1]    8741 -0.010676       1
+## sp[2]    6735  0.010652  1.0001
+## sp[3]    9400 0.0077126 0.99997
+## prev[1] 11259 -0.010553 0.99997
+## prev[2] 10275  0.012414  1.0006
+## covse12    --        --      --
+## covsp12    --        --      --
+## covse13    --        --      --
+## covsp13    --        --      --
+## covse23    --        --      --
+## covsp23    --        --      --
 ## 
-## Total time taken: 6.4 seconds</code></pre>
+## Total time taken: 7.1 seconds</code></pre>
 <p>We can run the same model with only complete observations as follows:</p>
 <pre class="r"><code>template_huiwalter(data %&gt;% na.omit(), outfile=&quot;huiwalter_MAR_complete.txt&quot;)
 ## The model and data have been written to huiwalter_MAR_complete.txt in the current working directory
@@ -675,38 +677,38 @@ results_complete
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                           
 ##         Lower95  Median Upper95    Mean        SD Mode       MCerr MC%ofSD
-## se[1]   0.76594  0.8229 0.87681 0.82179  0.028573   --  0.00027407       1
-## se[2]   0.87535 0.91959 0.96085 0.91792  0.022255   --  0.00022916       1
-## se[3]   0.91324 0.95037  0.9804 0.94853  0.017764   --  0.00018448       1
-## sp[1]   0.93656  0.9615 0.98189 0.96048  0.011856   --   0.0001143       1
-## sp[2]   0.97023 0.98695 0.99999  0.9858 0.0085137   -- 0.000095455     1.1
-## sp[3]   0.91977  0.9492 0.97556 0.94834  0.014338   --  0.00013949       1
-## prev[1] 0.23757 0.29373 0.35566 0.29424  0.030034   --   0.0002694     0.9
-## prev[2] 0.42457 0.48337 0.54487 0.48331  0.030848   --  0.00028605     0.9
+## se[1]   0.76571 0.82253 0.87642 0.82173  0.028478   --  0.00026881     0.9
+## se[2]   0.87558 0.91952 0.96038  0.9177  0.021978   --  0.00022303       1
+## se[3]   0.91295 0.95072 0.98078 0.94898  0.017838   --  0.00019252     1.1
+## sp[1]   0.93727  0.9618 0.98249 0.96076  0.011813   --  0.00011638       1
+## sp[2]   0.96961 0.98693 0.99997 0.98564 0.0087027   -- 0.000099348     1.1
+## sp[3]   0.91926 0.94921 0.97455  0.9483  0.014261   --  0.00014269       1
+## prev[1] 0.23658 0.29394 0.35462 0.29442  0.030235   --  0.00027123     0.9
+## prev[2] 0.42287 0.48279 0.54213 0.48327   0.03055   --  0.00027465     0.9
 ## covse12       0       0       0       0         0    0          --      --
 ## covsp12       0       0       0       0         0    0          --      --
 ## covse13       0       0       0       0         0    0          --      --
 ## covsp13       0       0       0       0         0    0          --      --
 ## covse23       0       0       0       0         0    0          --      --
 ## covsp23       0       0       0       0         0    0          --      --
-##                                 
-##         SSeff      AC.10    psrf
-## se[1]   10869 -0.0036318 0.99997
-## se[2]    9432 -0.0027714  1.0003
-## se[3]    9272  0.0017241  1.0007
-## sp[1]   10759   0.012274  1.0004
-## sp[2]    7955  0.0038081  1.0005
-## sp[3]   10566  0.0099897 0.99999
-## prev[1] 12429 -0.0081564 0.99998
-## prev[2] 11629 -0.0030188  1.0002
-## covse12    --         --      --
-## covsp12    --         --      --
-## covse13    --         --      --
-## covsp13    --         --      --
-## covse23    --         --      --
-## covsp23    --         --      --
+##                                  
+##         SSeff       AC.10    psrf
+## se[1]   11224  -0.0038759 0.99996
+## se[2]    9710   0.0084502       1
+## se[3]    8585    0.016932       1
+## sp[1]   10303  -0.0034691   1.001
+## sp[2]    7673 -0.00067997  1.0002
+## sp[3]    9989    0.021362  1.0001
+## prev[1] 12427    0.004062 0.99999
+## prev[2] 12373  -0.0028384 0.99997
+## covse12    --          --      --
+## covsp12    --          --      --
+## covse13    --          --      --
+## covsp13    --          --      --
+## covse23    --          --      --
+## covsp23    --          --      --
 ## 
-## Total time taken: 2.4 seconds</code></pre>
+## Total time taken: 2.7 seconds</code></pre>
 <p>The posteriors for the dataset using only complete observations are wider than those for the full data. This is not entirely surprising as we only have 513 complete observations compared to 993 observations with 1 or more test result!</p>
 <p>However, because the missing results are MCAR, there is no (substantial) shift in the posterior distribution of parameter estimates.</p>
 </div>
@@ -834,16 +836,16 @@ results
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                                
 ##       Lower95   Median  Upper95     Mean       SD Mode      MCerr MC%ofSD SSeff
-## se     0.8782  0.94917  0.99608  0.94308 0.033391   --   0.000371     1.1  8100
-## sp    0.96328  0.98958        1  0.98652 0.011449   -- 0.00023077       2  2461
-## prev 0.019289 0.052736 0.084089 0.051881  0.01618   -- 0.00028571     1.8  3207
-##                      
-##          AC.10   psrf
-## se   -0.019256 1.0006
-## sp     0.09008 1.0004
-## prev  0.063561 1.0012
+## se    0.87655  0.94897   0.9958  0.94255 0.033844   -- 0.00037724     1.1  8049
+## sp    0.96165  0.98982        1  0.98642 0.011896   -- 0.00025441     2.1  2187
+## prev 0.016552 0.052909 0.082022 0.051747  0.01634   -- 0.00030514     1.9  2868
+##                       
+##           AC.10   psrf
+## se   0.00030427 1.0001
+## sp      0.11767 1.0014
+## prev   0.089744 1.0018
 ## 
-## Total time taken: 0.4 seconds</code></pre>
+## Total time taken: 0.5 seconds</code></pre>
 <p>Note that <em>prevalence in the test 1 positive group</em> is the same as the positive predictive value of test 1 in the overall population. This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.</p>
 <p>You might have noticed that we are completely ignoring the Test1 negative samples. That is because they contain no useful information: we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.</p>
 </div>
