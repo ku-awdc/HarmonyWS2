@@ -248,7 +248,7 @@ It is quite easy to get the terms slightly wrong!
 
 ## Template Hui-Walter
 
-The model code and data format for an arbitrary number of populations (and tests) can be determined automatically using the template_huiwalter function from the runjas package:
+The model code and data format for an arbitrary number of populations (and tests) can be determined automatically using the template_huiwalter function from the runjags package:
 
 ```{r results='hide'}
 template_huiwalter(
