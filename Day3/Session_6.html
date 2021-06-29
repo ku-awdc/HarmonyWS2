@@ -516,12 +516,12 @@ all_summary[[1]] &lt;- summary(all_results[[1]], vars=&quot;^s&quot;) %&gt;%
 <hr />
 <pre class="r"><code>all_summary[[1]]
 ##   Model Parameter    Median   Lower95   Upper95
-## 1   M11     se[1] 0.8206677 0.7620171 0.8763282
-## 2   M11     se[2] 0.8941105 0.8423399 0.9462569
-## 3   M11     se[3] 0.9458963 0.9072333 0.9798754
-## 4   M11     sp[1] 0.9710334 0.9388512 0.9970277
-## 5   M11     sp[2] 0.9851706 0.9670271 0.9999999
-## 6   M11     sp[3] 0.9500671 0.9173517 0.9824784</code></pre>
+## 1   M11     se[1] 0.8204175 0.7612776 0.8747150
+## 2   M11     se[2] 0.8941731 0.8401509 0.9454193
+## 3   M11     se[3] 0.9453207 0.9061323 0.9796185
+## 4   M11     sp[1] 0.9710112 0.9386016 0.9971714
+## 5   M11     sp[2] 0.9854793 0.9679483 0.9999947
+## 6   M11     sp[3] 0.9502810 0.9176183 0.9831037</code></pre>
 <hr />
 <pre class="r"><code>crossval_data &lt;- data %&gt;%
   mutate(Test2 = case_when(
@@ -541,18 +541,18 @@ all_summary[[2]] &lt;- summary(all_results[[2]], vars=&quot;^s&quot;) %&gt;%
 <pre class="r"><code>bind_rows(all_summary) %&gt;%
   arrange(Parameter, Model)
 ##    Model Parameter    Median   Lower95   Upper95
-## 1    M11     se[1] 0.8206677 0.7620171 0.8763282
-## 2    M11     se[1] 0.8270237 0.7702146 0.8805672
-## 3    M11     se[2] 0.8941105 0.8423399 0.9462569
-## 4    M11     se[2] 0.8947358 0.8407548 0.9441141
-## 5    M11     se[3] 0.9458963 0.9072333 0.9798754
-## 6    M11     se[3] 0.9387668 0.8926849 0.9790522
-## 7    M11     sp[1] 0.9710334 0.9388512 0.9970277
-## 8    M11     sp[1] 0.9650743 0.9393259 0.9901584
-## 9    M11     sp[2] 0.9851706 0.9670271 0.9999999
-## 10   M11     sp[2] 0.9774278 0.9491585 0.9999325
-## 11   M11     sp[3] 0.9500671 0.9173517 0.9824784
-## 12   M11     sp[3] 0.9530482 0.9175638 0.9854965</code></pre>
+## 1    M11     se[1] 0.8204175 0.7612776 0.8747150
+## 2    M11     se[1] 0.8267192 0.7706508 0.8813462
+## 3    M11     se[2] 0.8941731 0.8401509 0.9454193
+## 4    M11     se[2] 0.8951462 0.8413079 0.9438230
+## 5    M11     se[3] 0.9453207 0.9061323 0.9796185
+## 6    M11     se[3] 0.9391299 0.8919846 0.9778045
+## 7    M11     sp[1] 0.9710112 0.9386016 0.9971714
+## 8    M11     sp[1] 0.9648652 0.9385321 0.9892440
+## 9    M11     sp[2] 0.9854793 0.9679483 0.9999947
+## 10   M11     sp[2] 0.9772756 0.9488476 0.9999602
+## 11   M11     sp[3] 0.9502810 0.9176183 0.9831037
+## 12   M11     sp[3] 0.9525915 0.9173937 0.9855384</code></pre>
 </div>
 </div>
 <div id="practical-session-6" class="section level1">
@@ -573,9 +573,8 @@ all_summary[[2]] &lt;- summary(all_results[[2]], vars=&quot;^s&quot;) %&gt;%
 <ul>
 <li>How do the results compare to using all available data?</li>
 </ul>
-</div>
-<div id="solution-1" class="section level2 fragile">
-<h2 class="fragile">Solution 1</h2>
+<div id="solution-1" class="section level3 fragile">
+<h3 class="fragile">Solution 1</h3>
 <p>Here is the code from above:</p>
 <pre class="r"><code>set.seed(2021-06-30)
 
@@ -625,32 +624,65 @@ template_huiwalter(data, outfile=&quot;huiwalter_MAR_all.txt&quot;)
 ## The model and data have been written to huiwalter_MAR_all.txt in the current working directory
 ## You should check and alter priors before running the model
 results_all &lt;- run.jags(&quot;huiwalter_MAR_all.txt&quot;)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Adapting the model for 1000 iterations...
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variables &#39;covse12&#39;, &#39;covsp12&#39;, &#39;covse13&#39;,
-## &#39;covsp13&#39;, &#39;covse23&#39; and &#39;covsp23&#39; appear to be non-stochastic; they
-## will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 14 variables....
-## Finished running the simulation
+
 # plot(results_all)
 results_all
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                           
 ##         Lower95  Median Upper95    Mean        SD Mode       MCerr MC%ofSD
-## se[1]   0.78544 0.83218 0.87744 0.83156  0.023526   --  0.00023398       1
-## se[2]   0.85736 0.90303 0.94337 0.90205  0.022253   --  0.00024124     1.1
-## se[3]   0.90644 0.94291 0.97498 0.94148  0.017847   --  0.00019194     1.1
-## sp[1]   0.93896 0.95994 0.97963 0.95937  0.010499   --  0.00010868       1
-## sp[2]   0.97422 0.98874       1  0.9878 0.0073739   -- 0.000087243     1.2
-## sp[3]   0.92089  0.9486 0.97355 0.94781  0.013571   --  0.00014661     1.1
-## prev[1] 0.21837 0.26043  0.3038 0.26083  0.022009   --  0.00020798     0.9
-## prev[2]  0.4312 0.47644 0.52429 0.47649  0.023759   --  0.00023335       1
+## se[1]    0.7856 0.83161 0.87744 0.83118  0.023535   --  0.00024185       1
+## se[2]   0.85718 0.90324 0.94424 0.90213  0.022419   --  0.00023949     1.1
+## se[3]    0.9064 0.94267 0.97539  0.9414  0.017865   --  0.00019156     1.1
+## sp[1]   0.93814  0.9598 0.97902 0.95932  0.010559   --  0.00011398     1.1
+## sp[2]    0.9743 0.98892       1 0.98794 0.0073089   -- 0.000082637     1.1
+## sp[3]    0.9216  0.9486 0.97435 0.94797  0.013541   --  0.00014354     1.1
+## prev[1] 0.21837 0.26017 0.30513 0.26081   0.02201   --  0.00021092       1
+## prev[2] 0.42945  0.4766 0.52331 0.47664  0.024123   --  0.00024618       1
+## covse12       0       0       0       0         0    0          --      --
+## covsp12       0       0       0       0         0    0          --      --
+## covse13       0       0       0       0         0    0          --      --
+## covsp13       0       0       0       0         0    0          --      --
+## covse23       0       0       0       0         0    0          --      --
+## covsp23       0       0       0       0         0    0          --      --
+##                                  
+##         SSeff       AC.10    psrf
+## se[1]    9469   0.0037902  1.0005
+## se[2]    8763    0.016276       1
+## se[3]    8697  -0.0018995       1
+## sp[1]    8582   0.0036607  1.0001
+## sp[2]    7823    0.014077 0.99997
+## sp[3]    8899 0.000072459  1.0003
+## prev[1] 10889  -0.0069463  1.0002
+## prev[2]  9601  -0.0061461       1
+## covse12    --          --      --
+## covsp12    --          --      --
+## covse13    --          --      --
+## covsp13    --          --      --
+## covse23    --          --      --
+## covsp23    --          --      --
+## 
+## Total time taken: 6.4 seconds</code></pre>
+<p>We can run the same model with only complete observations as follows:</p>
+<pre class="r"><code>template_huiwalter(data %&gt;% na.omit(), outfile=&quot;huiwalter_MAR_complete.txt&quot;)
+## The model and data have been written to huiwalter_MAR_complete.txt in the current working directory
+## You should check and alter priors before running the model
+results_complete &lt;- run.jags(&quot;huiwalter_MAR_complete.txt&quot;)
+
+# plot(results_complete)
+results_complete
+## 
+## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
+##                                                                           
+##         Lower95  Median Upper95    Mean        SD Mode       MCerr MC%ofSD
+## se[1]   0.76594  0.8229 0.87681 0.82179  0.028573   --  0.00027407       1
+## se[2]   0.87535 0.91959 0.96085 0.91792  0.022255   --  0.00022916       1
+## se[3]   0.91324 0.95037  0.9804 0.94853  0.017764   --  0.00018448       1
+## sp[1]   0.93656  0.9615 0.98189 0.96048  0.011856   --   0.0001143       1
+## sp[2]   0.97023 0.98695 0.99999  0.9858 0.0085137   -- 0.000095455     1.1
+## sp[3]   0.91977  0.9492 0.97556 0.94834  0.014338   --  0.00013949       1
+## prev[1] 0.23757 0.29373 0.35566 0.29424  0.030034   --   0.0002694     0.9
+## prev[2] 0.42457 0.48337 0.54487 0.48331  0.030848   --  0.00028605     0.9
 ## covse12       0       0       0       0         0    0          --      --
 ## covsp12       0       0       0       0         0    0          --      --
 ## covse13       0       0       0       0         0    0          --      --
@@ -658,80 +690,26 @@ results_all
 ## covse23       0       0       0       0         0    0          --      --
 ## covsp23       0       0       0       0         0    0          --      --
 ##                                 
-##         SSeff       AC.10   psrf
-## se[1]   10110  0.00095721 1.0001
-## se[2]    8509    0.010742 1.0003
-## se[3]    8646  -0.0085513      1
-## sp[1]    9331   0.0088833 1.0002
-## sp[2]    7144   -0.011658 1.0003
-## sp[3]    8569    0.013702 1.0001
-## prev[1] 11199 -0.00012769      1
-## prev[2] 10366    0.007268 1.0002
-## covse12    --          --     --
-## covsp12    --          --     --
-## covse13    --          --     --
-## covsp13    --          --     --
-## covse23    --          --     --
-## covsp23    --          --     --
+##         SSeff      AC.10    psrf
+## se[1]   10869 -0.0036318 0.99997
+## se[2]    9432 -0.0027714  1.0003
+## se[3]    9272  0.0017241  1.0007
+## sp[1]   10759   0.012274  1.0004
+## sp[2]    7955  0.0038081  1.0005
+## sp[3]   10566  0.0099897 0.99999
+## prev[1] 12429 -0.0081564 0.99998
+## prev[2] 11629 -0.0030188  1.0002
+## covse12    --         --      --
+## covsp12    --         --      --
+## covse13    --         --      --
+## covsp13    --         --      --
+## covse23    --         --      --
+## covsp23    --         --      --
 ## 
-## Total time taken: 7.1 seconds</code></pre>
-<p>We can run the same model with only complete observations as follows:</p>
-<pre class="r"><code>template_huiwalter(data %&gt;% na.omit(), outfile=&quot;huiwalter_MAR_complete.txt&quot;)
-## The model and data have been written to huiwalter_MAR_complete.txt in the current working directory
-## You should check and alter priors before running the model
-results_complete &lt;- run.jags(&quot;huiwalter_MAR_complete.txt&quot;)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Adapting the model for 1000 iterations...
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variables &#39;covse12&#39;, &#39;covsp12&#39;, &#39;covse13&#39;,
-## &#39;covsp13&#39;, &#39;covse23&#39; and &#39;covsp23&#39; appear to be non-stochastic; they
-## will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 14 variables....
-## Finished running the simulation
-# plot(results_complete)
-results_complete
-## 
-## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                                
-##         Lower95  Median Upper95    Mean        SD Mode      MCerr MC%ofSD SSeff
-## se[1]    0.7641 0.82239 0.87517 0.82144  0.028816   -- 0.00027411       1 11051
-## se[2]   0.87362 0.91976 0.96012 0.91784  0.022328   -- 0.00022549       1  9805
-## se[3]   0.91453  0.9504 0.98166 0.94879  0.017642   -- 0.00018554     1.1  9041
-## sp[1]   0.93729 0.96168 0.98213 0.96066  0.011745   --  0.0001158       1 10287
-## sp[2]   0.96967 0.98707 0.99999  0.9858 0.0086809   -- 0.00010232     1.2  7198
-## sp[3]   0.92075 0.94919 0.97669  0.9483  0.014365   -- 0.00014143       1 10315
-## prev[1] 0.23659  0.2937 0.35394 0.29429  0.030129   -- 0.00027334     0.9 12149
-## prev[2] 0.42157 0.48329 0.54141 0.48342  0.030477   -- 0.00028314     0.9 11586
-## covse12       0       0       0       0         0    0         --      --    --
-## covsp12       0       0       0       0         0    0         --      --    --
-## covse13       0       0       0       0         0    0         --      --    --
-## covsp13       0       0       0       0         0    0         --      --    --
-## covse23       0       0       0       0         0    0         --      --    --
-## covsp23       0       0       0       0         0    0         --      --    --
-##                            
-##               AC.10    psrf
-## se[1]   -0.00054586  1.0001
-## se[2]     0.0018981       1
-## se[3]     0.0074038  1.0004
-## sp[1]     -0.011512  1.0002
-## sp[2]      0.010497  1.0003
-## sp[3]     -0.013852  1.0009
-## prev[1]   0.0039087 0.99996
-## prev[2] -0.00020744       1
-## covse12          --      --
-## covsp12          --      --
-## covse13          --      --
-## covsp13          --      --
-## covse23          --      --
-## covsp23          --      --
-## 
-## Total time taken: 2.6 seconds</code></pre>
+## Total time taken: 2.4 seconds</code></pre>
 <p>The posteriors for the dataset using only complete observations are wider than those for the full data. This is not entirely surprising as we only have 513 complete observations compared to 993 observations with 1 or more test result!</p>
 <p>However, because the missing results are MCAR, there is no (substantial) shift in the posterior distribution of parameter estimates.</p>
+</div>
 </div>
 <div id="exercise-2" class="section level2 fragile">
 <h2 class="fragile">Exercise 2</h2>
@@ -743,9 +721,8 @@ results_complete
 <li><p>You are using passive surveillance data from two countries that use the same 3 tests for an infectious respiratory disease. The reason that each individual is being tested, including presenting signs, is unknown. The majority of individuals have a result for test 1, a smaller proportion have a result for test 2, and relatively few have results for test 3. Test 2 was used as a confirmatory test following a positive result for test 1 in most of the individuals, but not all.</p></li>
 </ol>
 <p>For each of these examples, decide if the data are MCAR, MAR, or MNAR. Would it be safe to proceed with a basic 3-test, 2-population analysis in each case?</p>
-</div>
-<div id="solution-2" class="section level2 fragile">
-<h2 class="fragile">Solution 2</h2>
+<div id="solution-2" class="section level3 fragile">
+<h3 class="fragile">Solution 2</h3>
 <p>Here are the key features of each example:</p>
 <ol style="list-style-type: decimal">
 <li><p>This is either MCAR or MAR, depending on how the tests were distributed between populations by batch. If the batch was used for both populations randomly, then we have MCAR. Otherwise if mostly one population or the other was affected by the bad batch, then we have MAR, but as long as the batch was not confounded by possible disease status within population, then we can safely analyse the data as if it were MCAR. If there is reason to believe that a specific type of individual is more likely to have been affected by missingness then we may have to proceed with only complete observations.</p></li>
@@ -753,6 +730,7 @@ results_complete
 <li><p>There are probably good reasons to expect that prevalence is correlated with age, which is a reflection of the animals’ milking status. But we may be able to account for this using a predictor of age on the prevalence (see session 7), in which case we have MAR and can proceed with the analysis. However, it would be extremely smart to assess the impact of including only complete observations (i.e. milking animals only) in the analysis. Be prepared for the unwelcome realisation that the sensitivity and/or specificity of one of the other two tests may depend on the age of the animal.</p></li>
 <li><p>There are a lot of unknowns here, so the data is MNAR. Of particular concern is the fact that test 2 was used as a follow-up test based on a positive result from test 1 in a proportion of the individuals: this breaks the key assumption of conditional independence between tests. Without some additional information about <em>why</em> the individuals were being tested, it may be impossible to analyse this data safely. It is not even safe to include only complete observations due to the broken assumption of conditional independence.</p></li>
 </ol>
+</div>
 </div>
 <div id="optional-exercise-a" class="section level2 fragile">
 <h2 class="fragile">Optional exercise A</h2>
@@ -769,10 +747,10 @@ results_complete
 <li>Based on empirical evidence</li>
 </ul>
 <p>Exclude one population at a time and re-analyse the data. What do you notice about your assumption of constant sensitivity and specificity across populations?</p>
-</div>
-<div id="solution-a" class="section level2 fragile">
-<h2 class="fragile">Solution A</h2>
+<div id="solution-a" class="section level3 fragile">
+<h3 class="fragile">Solution A</h3>
 <p>TODO</p>
+</div>
 </div>
 <div id="optional-exercise-b" class="section level2 fragile">
 <h2 class="fragile">Optional exercise B</h2>
@@ -812,10 +790,8 @@ follow_up %&gt;% count(Test1, Test2)
 <p>As you can see, Test2 is taken as a positive follow-up for Test1 <em>on the condition that Test1 is positive</em>.</p>
 <p>What information can you potentially extract from this data using minimally informative priors for all parameters?</p>
 <p>Now let’s say that you can use a Beta(44.21, 2.64) prior for sensitivity and a Beta(79.52, 1.13) prior for specificity of the second test. What information can you extract now regarding the first test?</p>
-</div>
-</div>
-<div id="solution-b" class="section level1 fragile">
-<h1 class="fragile">Solution B</h1>
+<div id="solution-b" class="section level3 fragile">
+<h3 class="fragile">Solution B</h3>
 <p>One of our usual degrees of freedom is missing, so effectively we have 2 data points from which we would like to estimate as many as 5 parameters. It is therefore completely impossible to extract any useful information from this data using minimally informative priors.</p>
 <p>We do know the proportion of Test1 positive individuals that tested positive with Test2, so intuitively you might expect that we can assess the specificity of Test1. This is true, assuming that we have extremely strong priors for the sensitivity and specificity of Test2. For example:</p>
 <pre><code>
@@ -853,32 +829,25 @@ sp &lt;- list(chain1=0.99, chain2=0.5)
 prev &lt;- list(chain1=0.1, chain2=0.9)
 
 results &lt;- run.jags(&quot;confirmation_test_model.txt&quot;, n.chains=2)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Adapting the model for 1000 iterations...
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Calculating the Gelman-Rubin statistic for 3 variables....
-## Finished running the simulation
 results
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                                
 ##       Lower95   Median  Upper95     Mean       SD Mode      MCerr MC%ofSD SSeff
-## se    0.87508  0.94883  0.99531  0.94208  0.03427   -- 0.00040196     1.2  7269
-## sp    0.96325  0.99001        1  0.98676 0.011516   -- 0.00023331       2  2436
-## prev 0.017484 0.053324 0.083361 0.052243 0.016234   -- 0.00029243     1.8  3082
+## se     0.8782  0.94917  0.99608  0.94308 0.033391   --   0.000371     1.1  8100
+## sp    0.96328  0.98958        1  0.98652 0.011449   -- 0.00023077       2  2461
+## prev 0.019289 0.052736 0.084089 0.051881  0.01618   -- 0.00028571     1.8  3207
 ##                      
 ##          AC.10   psrf
-## se   0.0015577      1
-## sp      0.1073      1
-## prev   0.07886 1.0001
+## se   -0.019256 1.0006
+## sp     0.09008 1.0004
+## prev  0.063561 1.0012
 ## 
 ## Total time taken: 0.4 seconds</code></pre>
 <p>Note that <em>prevalence in the test 1 positive group</em> is the same as the positive predictive value of test 1 in the overall population. This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.</p>
 <p>You might have noticed that we are completely ignoring the Test1 negative samples. That is because they contain no useful information: we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.</p>
+</div>
+</div>
 <div id="summary" class="section level2 fragile">
 <h2 class="fragile">Summary</h2>
 <ul>

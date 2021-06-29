@@ -367,7 +367,7 @@ Now retain only the complete observations and re-run the model
   - How do the results compare to using all available data?
 
 
-## Solution 1 {.fragile}
+### Solution 1 {.fragile}
 
 Here is the code from above:
 
@@ -448,7 +448,7 @@ Think about the following examples of missingness (all with 3 tests and 2 popula
 For each of these examples, decide if the data are MCAR, MAR, or MNAR. Would it be safe to proceed with a basic 3-test, 2-population analysis in each case?
 
 
-## Solution 2 {.fragile}
+### Solution 2 {.fragile}
 
 Here are the key features of each example:
 
@@ -479,9 +479,10 @@ Analyse the data using minimally informative priors for all parameters.  Try to 
 Exclude one population at a time and re-analyse the data.  What do you notice about your assumption of constant sensitivity and specificity across populations?
 
 
-## Solution A {.fragile}
+### Solution A {.fragile}
 
 TODO
+
 
 ## Optional exercise B {.fragile}
 
@@ -514,7 +515,7 @@ What information can you potentially extract from this data using minimally info
 Now let's say that you can use a Beta(44.21, 2.64) prior for sensitivity and a Beta(79.52, 1.13) prior for specificity of the second test.  What information can you extract now regarding the first test?
 
 
-# Solution B {.fragile}
+### Solution B {.fragile}
 
 One of our usual degrees of freedom is missing, so effectively we have 2 data points from which we would like to estimate as many as 5 parameters. It is therefore completely impossible to extract any useful information from this data using minimally informative priors. 
 

@@ -414,7 +414,7 @@ Look at the model code and familiarise yourself with how the model is set out (t
 
 Now activate the correlation terms between tests 1 and 2.  Is anything different about the results?
 
-## Solution 1 {.fragile}
+### Solution 1 {.fragile}
 
 There is no particular solution to the first part of this exercise, but please ask if you have any questions about the model code that template_huiwalter generates.  Remember that re-running the template_huiwalter function will over-write your existing model including any changes you made, so be careful!
 
@@ -450,7 +450,7 @@ covid_specificity
 
 Now exclude the NoseAG test from the dataset, re-generate the model code (without covariance terms), run the model, and interpret the results.  How have the posteriors for the throat tests been affected by excluding the nose swab test?
 
-## Solution 2 {.fragile}
+### Solution 2 {.fragile}
 
 Here are the results for all 3 tests:
 
@@ -508,13 +508,13 @@ pcr_detection
 Have a think about why this might be the case.  We will spend a lot of time discussing this topic tomorrow!
 
 
-## Optional Exercise A {.fragile}
+## Optional exercise A {.fragile}
 
 Re-fit a model to this data using all three possible covse and covsp parameters between all 3 tests
 
 What do you notice about the results?
 
-## Optional Solution A {.fragile}
+### Solution A {.fragile}
 
 You can either manually change all 3 covse/covsp from before, or regenerate the model using the covariance=TRUE option:
 

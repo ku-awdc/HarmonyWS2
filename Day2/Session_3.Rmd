@@ -395,7 +395,7 @@ Now change the simulated prevalence so that it varies between 0.4-0.6 rather tha
   - How does this affect the confidence intervals for the diagnostic test parameters?
 
 
-## Solution 1 {.fragile}
+### Solution 1 {.fragile}
 
 This is what the model should look like:
 
@@ -553,7 +553,7 @@ Fit a 2-test, 3-population model to this data using minimally informative Beta(1
 
 Now exclude individuals in the ExperimentalInfection population and re-run the model.  Do the estimated results change?  Why might that be?
 
-## Solution 2 {.fragile}
+### Solution 2 {.fragile}
 
 First we need to make a minor change to the model to include #data# prev - only 1 line of this model has changed compared to before:
 
@@ -748,7 +748,7 @@ Alternatively, if you really want all summary statistics to be calculated automa
 runjags.options(force.summary=TRUE)
 ```
 
-## Solution A {.fragile}
+### Solution A {.fragile}
 
 ```{r}
 N <- 1000
@@ -809,7 +809,7 @@ population_effect[p] ~ dnorm(0, tau)
 
 This introduces the normal distribution, which is parameterised using mean and precision (= inverse variance) in JAGS.  For more information on distributions that are available in JAGS see the jags_user_manual provided in the GitHub repo.
 
-## Solution B {.fragile}
+### Solution B {.fragile}
 
 This was quite tricky, so if you managed to get close to the solution without cheating then you have done well!
 
