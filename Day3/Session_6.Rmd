@@ -462,13 +462,57 @@ Here are the key features of each example:
 
 ## Optional exercise A {.fragile}
 
-For this exercise you will need the 3-test, 3-population dataset provided as "anthrax.Rdata" under day 3. This dataset contains the result of 3 anthrax tests on cattle carcasses from 3 populations:
+For this exercise you will need the 3-test, 3-population dataset provided as "anthrax.Rdata" under day 3. Here is what the data look like:
+
+```{r echo=FALSE}
+set.seed(2021-06-30)
+
+prevalence <- c(0.1, 0.15, 0.3)
+capsid <- 0.75
+sensitivity_ab <- c(0.99, 0.95, 0.8)
+sensitivity_c <- c(0.8, 0.75, 0.8)
+specificity <- c(0.99, 0.99, 0.96)
+N <- 666
+pops <- c(0.2, 0.3, 0.5)
+
+anthrax <- tibble(
+  Population = factor(sample(str_c("Population_", LETTERS[1:3]), N, TRUE, pops)),
+  Status = rbinom(N, 1, prevalence[as.numeric(Population)]),
+  Capsid = rbinom(N, 1, Status*capsid)
+) %>%
+  mutate( Sensitivity1 = case_when(
+    Population == "Population_C" ~ sensitivity_c[1],
+    TRUE ~ sensitivity_ab[1]
+  )) %>%
+  mutate( Sensitivity2 = case_when(
+    Population == "Population_C" ~ sensitivity_c[2],
+    TRUE ~ sensitivity_ab[2]
+  )) %>%
+  mutate( Sensitivity3 = case_when(
+    Population == "Population_C" ~ sensitivity_c[3],
+    TRUE ~ sensitivity_ab[3]
+  )) %>%
+  mutate(
+    PMB = rbinom(N, 1, Capsid*Sensitivity1 + (1-Capsid)*(1-specificity[1])),
+    AzureB = rbinom(N, 1, Capsid*Sensitivity2 + (1-Capsid)*(1-specificity[2])),
+    qPCR = rbinom(N, 1, Status*Sensitivity3 + (1-Status)*(1-specificity[3]))
+  ) %>%
+  select(-Status, -Capsid, -Sensitivity1, -Sensitivity2, -Sensitivity3) %>%
+  mutate_if(is.numeric, factor, levels=0:1, labels=c("Negative", "Positive")) %>%
+  arrange(Population)
+
+save(anthrax, file="anthrax.Rdata")
+
+summary(anthrax)
+```
+
+We have the result of 3 anthrax tests on cattle carcasses from 3 populations:
 
   - PMB (polychrome methylene blue) is a stain used to help detect the capsule of anthrax bacteria on blood smears
   - AzureB is a similar stain that is easier to perform in low resource settings
   - qPCR is a test for DNA of the anthrax bacteria
   
-All populations consistent of carcasses reported as sudden death events in extensively farmed cattle in 3 different populated areas surrounding the Serengeti national park. The samples from populations 1 and 2 consisted of blood smears taken directly from the carcasses, while the samples for population 3 consisted of blood smears made from blood swabs taken from the carcasses. qPCR resutls were obtain from fragments of blood scraped from the blood smears.
+All populations consistent of carcasses reported as sudden death events in extensively farmed cattle in 3 different populated areas surrounding the Serengeti national park. The samples from populations A and B consisted of blood smears taken directly from the carcasses, while the samples for population C consisted of blood smears made from blood swabs taken from the carcasses. qPCR resutls were obtain from fragments of blood scraped from the blood smears.
 
 Analyse the data using minimally informative priors for all parameters.  Try to identify any potential pairwise correlations between the tests:
 
@@ -480,8 +524,39 @@ Exclude one population at a time and re-analyse the data.  What do you notice ab
 
 ### Solution A {.fragile}
 
+We can fit this model with no covariance terms relatively easily:
+
+```{r}
+template_huiwalter(anthrax, "anthrax_model_nocov.txt", covariance=FALSE)
+results_nocov <- run.jags("anthrax_model_nocov.txt")
+results_nocov
+```
+
+Fitting the model with all covariance terms is possible but we get low effective sample sizes:
+
+```{r}
+template_huiwalter(anthrax, "anthrax_model_allcov.txt", covariance=TRUE)
+results_allcov <- run.jags("anthrax_model_allcov.txt")
+results_allcov
+```
+
+In order to interpret these results properly we would need to first get more samples e.g.:
+
+```{r}
+results_allcov <- extend.jags(results_allcov, sample=90000, method="parallel")
+results_allcov
+```
+
+Now we can see that there is some evidence for positive correlation between tests 1 and 2.  This makes biological sense because both are detecting the presence of a specific part of the bacterium (it's capsid).  The estimates for correlation with test 3 are much closer to zero.
+
+In this case we probably would want to run the model with only correlation between tests 1 and 2 active.
+
 TODO
 
+
+```{r echo=FALSE}
+cleanup <- c(cleanup, "anthrax_model_allcov.txt", "anthrax_model_nocov.txt")
+```
 
 ## Optional exercise B {.fragile}
 
@@ -568,6 +643,8 @@ results
 Note that *prevalence in the test 1 positive group* is the same as the positive predictive value of test 1 in the overall population.  This tells us the value of test 1 as a screening test in this population, which is the best we can do without additional information.
 
 You might have noticed that we are completely ignoring the Test1 negative samples.  That is because they contain no useful information:  we have one data point (observed prevalence) and one known parameter (positive predictive value), so the three additional parameters of interest (sensitivity of test 1, specificity of test 1, and true prevalence) are unidentifiable.
+
+Note that the fundamental problem with this data is that it does not really contain the information needed to assess performance of either test.  If we had a third test that was applied to all individuals in the population then we would be able to estimate the combined sensitivity/specificity of the serial combination of the first two tests, but even with a third test we still cannot estimate individual sensitivity and specificity of the first two tests without strong prior information for at least one of these two tests.  This is a good example of where secondary data is less useful than we would like it to be.
 
 ```{r echo=FALSE}
 cleanup <- c(cleanup, "confirmation_test_model.txt")

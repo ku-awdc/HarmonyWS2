@@ -162,20 +162,17 @@ model{
     prev[p] ~ dbeta(1, 1)
   }
 
-  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
-  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+  se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  sp[1] ~ dbeta(1, 1)
+  se[2] ~ dbeta(1, 1)T(1-sp[2], )
+  sp[2] ~ dbeta(1, 1)
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #data# Tally, TotalTests, Populations
   #monitor# prev, prob, se, sp
   #inits# prev, se, sp
 }
 ```
 
-. . .
-
-NB: prior hyper-parameters may be specified as data
 
 ## Multiple populations: assumptions
 
@@ -268,11 +265,16 @@ There are actually multiple ways to specify data and initial values to runjags, 
 
 We will use these to keep separate lists of data and initial values (these could also be data frames, or environments)
 
-```{r eval=FALSE}
+```{r echo=FALSE}
+Tally <- matrix(1:4, ncol=2)
+Populations <- 2
+```
+
+```{r}
 data <- list(
   Tally = Tally,
   TotalTests = apply(Tally, 2, sum),
-  Populations = dim(Tally, 2),
+  Populations = dim(Tally)[2],
   prev = rep(NA, Populations),
   se_prior = matrix(1, ncol=2, nrow=2),
   sp_prior = matrix(1, ncol=2, nrow=2)
@@ -379,9 +381,9 @@ data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
   mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %>%
   mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
 
-(twoXtwoXpop <- with(data, table(Test1, Test2, Population)))
-(Tally <- matrix(twoXtwoXpop, ncol=Populations))
-(TotalTests <- apply(Tally, 2, sum))
+twoXtwoXpop <- with(data, table(Test1, Test2, Population))
+Tally <- matrix(twoXtwoXpop, ncol=Populations)
+TotalTests <- apply(Tally, 2, sum)
 ```
 
 Start with 5 populations and analyse the data using the independent prevalence model.  Set a RNG seed so that the results are reproducible exactly.
@@ -407,26 +409,40 @@ model{
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
   
     # Test1- Test2-
-	  prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
 
     # Test1+ Test2-
-  	prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
+    prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
 
     # Test1- Test2+
-  	prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
+    prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
 
-  	 # Test1+ Test2+
-	  prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+    # Test1+ Test2+
+    prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
 	  
     prev[p] ~ dbeta(1, 1)
   }
 
   se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  # Or just:
+  # se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  
   sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  # Or just:
+  # sp[1] ~ dbeta(1, 1)
+  
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  # Or just:
+  # se[2] ~ dbeta(1, 1)T(1-sp[2], )
+  
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
-
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  # Or just:
+  # sp[2] ~ dbeta(1, 1)
+  
+  # If you are using se_prior and sp_prior then you also need this line:
+  #data# se_prior, sp_prior
+  
+  #data# Tally, TotalTests, Populations
   #monitor# prev, se, sp
   #inits# prev, se, sp, .RNG.name, .RNG.seed
   #module# lecuyer
@@ -436,7 +452,7 @@ cat(multipop, file="multipopulation.txt")
 cleanup <- c(cleanup, "multipopulation.txt")
 ```
 
-[Using `se_prior` and `sp_prior` is optional: you can also put the priors directly into the model code]
+[Note: using `se_prior` and `sp_prior` is optional: you can also put the priors directly into the model code e.g. dbeta(1,1) as before]
 
 Here is the R code to run the model:
 

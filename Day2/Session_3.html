@@ -286,18 +286,15 @@ library(&quot;TeachingDemos&quot;)</code></pre>
     prev[p] ~ dbeta(1, 1)
   }
 
-  se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
-  sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
-  se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
-  sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
+  se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  sp[1] ~ dbeta(1, 1)
+  se[2] ~ dbeta(1, 1)T(1-sp[2], )
+  sp[2] ~ dbeta(1, 1)
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #data# Tally, TotalTests, Populations
   #monitor# prev, prob, se, sp
   #inits# prev, se, sp
 }</code></pre>
-<div class="incremental">
-<p>NB: prior hyper-parameters may be specified as data</p>
-</div>
 </div>
 <div id="multiple-populations-assumptions" class="section level2">
 <h2>Multiple populations: assumptions</h2>
@@ -383,7 +380,7 @@ prev
 <pre class="r"><code>data &lt;- list(
   Tally = Tally,
   TotalTests = apply(Tally, 2, sum),
-  Populations = dim(Tally, 2),
+  Populations = dim(Tally)[2],
   prev = rep(NA, Populations),
   se_prior = matrix(1, ncol=2, nrow=2),
   sp_prior = matrix(1, ncol=2, nrow=2)
@@ -475,49 +472,9 @@ data &lt;- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %&
   mutate(Test1 = rbinom(N, 1, sensitivity[1]*Status + (1-specificity[1])*(1-Status))) %&gt;%
   mutate(Test2 = rbinom(N, 1, sensitivity[2]*Status + (1-specificity[2])*(1-Status)))
 
-(twoXtwoXpop &lt;- with(data, table(Test1, Test2, Population)))
-## , , Population = 1
-## 
-##      Test2
-## Test1   0   1
-##     0  92  15
-##     1  39  63
-## 
-## , , Population = 2
-## 
-##      Test2
-## Test1   0   1
-##     0 126  17
-##     1  20  24
-## 
-## , , Population = 3
-## 
-##      Test2
-## Test1   0   1
-##     0  54  14
-##     1  45  70
-## 
-## , , Population = 4
-## 
-##      Test2
-## Test1   0   1
-##     0 119  20
-##     1  36  46
-## 
-## , , Population = 5
-## 
-##      Test2
-## Test1   0   1
-##     0  88  14
-##     1  34  64
-(Tally &lt;- matrix(twoXtwoXpop, ncol=Populations))
-##      [,1] [,2] [,3] [,4] [,5]
-## [1,]   92  126   54  119   88
-## [2,]   39   20   45   36   34
-## [3,]   15   17   14   20   14
-## [4,]   63   24   70   46   64
-(TotalTests &lt;- apply(Tally, 2, sum))
-## [1] 209 187 183 221 200</code></pre>
+twoXtwoXpop &lt;- with(data, table(Test1, Test2, Population))
+Tally &lt;- matrix(twoXtwoXpop, ncol=Populations)
+TotalTests &lt;- apply(Tally, 2, sum)</code></pre>
 <p>Start with 5 populations and analyse the data using the independent prevalence model. Set a RNG seed so that the results are reproducible exactly.</p>
 <p>Now try with 1, 3, and 10 populations</p>
 <ul>
@@ -536,7 +493,7 @@ model{
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
   
     # Test1- Test2-
-      prob[1,p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    prob[1,p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
 
     # Test1+ Test2-
     prob[2,p] &lt;- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
@@ -544,23 +501,37 @@ model{
     # Test1- Test2+
     prob[3,p] &lt;- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
 
-     # Test1+ Test2+
-      prob[4,p] &lt;- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+    # Test1+ Test2+
+    prob[4,p] &lt;- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
       
     prev[p] ~ dbeta(1, 1)
   }
 
   se[1] ~ dbeta(se_prior[1,1], se_prior[1,2])T(1-sp[1], )
+  # Or just:
+  # se[1] ~ dbeta(1, 1)T(1-sp[1], )
+  
   sp[1] ~ dbeta(sp_prior[1,1], sp_prior[1,2])
+  # Or just:
+  # sp[1] ~ dbeta(1, 1)
+  
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
+  # Or just:
+  # se[2] ~ dbeta(1, 1)T(1-sp[2], )
+  
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
-
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  # Or just:
+  # sp[2] ~ dbeta(1, 1)
+  
+  # If you are using se_prior and sp_prior then you also need this line:
+  #data# se_prior, sp_prior
+  
+  #data# Tally, TotalTests, Populations
   #monitor# prev, se, sp
   #inits# prev, se, sp, .RNG.name, .RNG.seed
   #module# lecuyer
 }</code></pre>
-<p>[Using <code>se_prior</code> and <code>sp_prior</code> is optional: you can also put the priors directly into the model code]</p>
+<p>[Note: using <code>se_prior</code> and <code>sp_prior</code> is optional: you can also put the priors directly into the model code e.g. dbeta(1,1) as before]</p>
 <p>Here is the R code to run the model:</p>
 <pre class="r"><code># Set a random seed in R:
 set.seed(2021-06-29)
@@ -611,7 +582,7 @@ results_5p
 ## sp[1]   0.22637 1.0002
 ## sp[2]   0.17053 1.0002
 ## 
-## Total time taken: 2 seconds</code></pre>
+## Total time taken: 2.1 seconds</code></pre>
 <p>To change the number of populations and range of prevalence you just need to modify the simulation code, for example 3 populations with prevalence between 0.4-0.6 can be obtained using:</p>
 <pre class="r"><code># Change the number of populations here:
 Populations &lt;- 3
@@ -715,7 +686,7 @@ results_3p
 ## sp[1]   0.73436 1.0031
 ## sp[2]   0.44604      1
 ## 
-## Total time taken: 6.7 seconds</code></pre>
+## Total time taken: 7.1 seconds</code></pre>
 <p>As a general rule, the more populations you have, and the more the prevalence varies between them, the better. With two tests, we really need two or more populations for the model to be identifiable. However, this is conditional on having a consistent sensitivity and specificity between your populations!!!</p>
 </div>
 </div>
@@ -1080,7 +1051,7 @@ summary(results_100p, vars=c(&quot;^s&quot;, &quot;prev[1:5]&quot;))
 ## sp[1]   0.22637 1.0002
 ## sp[2]   0.17053 1.0002
 ## 
-## Total time taken: 2 seconds</code></pre>
+## Total time taken: 2.1 seconds</code></pre>
 </div>
 </div>
 <div id="optional-exercise-b" class="section level2 fragile">
@@ -1191,7 +1162,7 @@ results_random
 ## tau        3004  0.23548  1.0003
 ## intercept  1980  0.36019  1.0001
 ## 
-## Total time taken: 25 seconds</code></pre>
+## Total time taken: 25.2 seconds</code></pre>
 <p>These results give much narrower confidence intervals for the sensitivity and specificity than when assuming that the prevalences are independent. The downside is that we must assume that the distribution of prevalence is normal (on the logit scale) between populations. In this case we know that they are simulated from a uniform distribution (on the prevalence scale) so this assumption does not hold. But it may still be reasonable to make this assumption as long as we can assume that the prevalences come from a single distribution, even if it might not (quite) be normal. It would be much more dangerous to do this if we have a single outlier population with a markedly different prevalence than the others.</p>
 <p>Note: when fitting a random effect we might not be interested in the estimates for each population as much as the overall intercept and precision (tau). But there is nothing to stop us also extracting estimates for a specific population - I have done this for the first population for illustration.</p>
 </div>
