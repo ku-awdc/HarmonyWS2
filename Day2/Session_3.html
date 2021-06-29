@@ -582,7 +582,7 @@ results_5p
 ## sp[1]   0.22637 1.0002
 ## sp[2]   0.17053 1.0002
 ## 
-## Total time taken: 2.1 seconds</code></pre>
+## Total time taken: 2.6 seconds</code></pre>
 <p>To change the number of populations and range of prevalence you just need to modify the simulation code, for example 3 populations with prevalence between 0.4-0.6 can be obtained using:</p>
 <pre class="r"><code># Change the number of populations here:
 Populations &lt;- 3
@@ -656,7 +656,7 @@ results_3p
 ## sp[1]   0.73548 1.0112
 ## sp[2]   0.43006 1.0066
 ## 
-## Total time taken: 1.9 seconds</code></pre>
+## Total time taken: 2.2 seconds</code></pre>
 <p>Note that the effective sample size is not enough here - you either need to run the model for longer in the first place, or extend it to get more samples:</p>
 <pre class="r"><code># Extend the model:
 results_3p &lt;- extend.jags(results_3p, sample=50000)
@@ -686,7 +686,7 @@ results_3p
 ## sp[1]   0.73436 1.0031
 ## sp[2]   0.44604      1
 ## 
-## Total time taken: 7.1 seconds</code></pre>
+## Total time taken: 8.2 seconds</code></pre>
 <p>As a general rule, the more populations you have, and the more the prevalence varies between them, the better. With two tests, we really need two or more populations for the model to be identifiable. However, this is conditional on having a consistent sensitivity and specificity between your populations!!!</p>
 </div>
 </div>
@@ -745,7 +745,12 @@ model{
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior, prev
+  #data# se_prior, sp_prior
+  
+  # The new line:
+  #data# prev
+
+  #data# Tally, TotalTests, Populations
   #monitor# prev, se, sp
   #inits# prev, se, sp, .RNG.name, .RNG.seed
   #module# lecuyer
@@ -834,7 +839,7 @@ results_3p
 ## sp[1]   0.00096158 0.99995
 ## sp[2]    0.0086152  1.0001
 ## 
-## Total time taken: 1.2 seconds</code></pre>
+## Total time taken: 1.8 seconds</code></pre>
 <p>The 95% CI for sensitivity and specificity of both tests are extremely narrow compared to the previous dataset with the same minimally informative priors. This is because of the 1st and 3rd population: because we know the prevalence is 0 or 1, the latent state is no longer latent so the model is <em>much</em> better identified. This has a knock-on effect to population 2 because we assume the sensitivty and specificity are the same.</p>
 <p>Re-running the model for the first 2 populations is quite straightforward:</p>
 <pre class="r"><code>(twoXtwoXpop &lt;- with(multi_pop_data, table(Test1, Test2, Population, exclude=&quot;ExperimentalInfection&quot;)))
@@ -907,7 +912,7 @@ results_2p
 ## sp[1]   0.09583  1.0003
 ## sp[2]   0.17803  1.0001
 ## 
-## Total time taken: 1.1 seconds</code></pre>
+## Total time taken: 1.4 seconds</code></pre>
 <p>The sensitivity of both tests is now much more poorly estimated because we don’t have a known positive population on which to base this estimate. Furthermore, the posteriors have generally shifted downwards compared to the 3 population model. We can illustrate this using a graph:</p>
 <pre class="r"><code>pop2 &lt;- combine.mcmc(results_2p, vars=&quot;se&quot;, return.samples = 10000)
 pop3 &lt;- combine.mcmc(results_3p, vars=&quot;se&quot;, return.samples = 10000)
@@ -1051,7 +1056,7 @@ summary(results_100p, vars=c(&quot;^s&quot;, &quot;prev[1:5]&quot;))
 ## sp[1]   0.22637 1.0002
 ## sp[2]   0.17053 1.0002
 ## 
-## Total time taken: 2.1 seconds</code></pre>
+## Total time taken: 2.6 seconds</code></pre>
 </div>
 </div>
 <div id="optional-exercise-b" class="section level2 fragile">
@@ -1077,7 +1082,7 @@ model{
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
 
     # Test1- Test2-
-      prob[1,p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    prob[1,p] &lt;- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
 
     # Test1+ Test2-
     prob[2,p] &lt;- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
@@ -1085,11 +1090,11 @@ model{
     # Test1- Test2+
     prob[3,p] &lt;- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
 
-     # Test1+ Test2+
-      prob[4,p] &lt;- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+    # Test1+ Test2+
+    prob[4,p] &lt;- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
     
-      logit(prev[p]) &lt;- intercept + population_effect[p]
-      population_effect[p] ~ dnorm(0, tau)
+    logit(prev[p]) &lt;- intercept + population_effect[p]
+    population_effect[p] ~ dnorm(0, tau)
   }
 
   # Priors for the intercept and precision of the random effect:
@@ -1101,7 +1106,9 @@ model{
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #data# se_prior, sp_prior
+  
+  #data# Tally, TotalTests, Populations
   #monitor# prev[1], se, sp, tau, intercept
   #inits# se, sp, tau, intercept, .RNG.name, .RNG.seed
   #modules# lecuyer
@@ -1162,7 +1169,7 @@ results_random
 ## tau        3004  0.23548  1.0003
 ## intercept  1980  0.36019  1.0001
 ## 
-## Total time taken: 25.2 seconds</code></pre>
+## Total time taken: 36.1 seconds</code></pre>
 <p>These results give much narrower confidence intervals for the sensitivity and specificity than when assuming that the prevalences are independent. The downside is that we must assume that the distribution of prevalence is normal (on the logit scale) between populations. In this case we know that they are simulated from a uniform distribution (on the prevalence scale) so this assumption does not hold. But it may still be reasonable to make this assumption as long as we can assume that the prevalences come from a single distribution, even if it might not (quite) be normal. It would be much more dangerous to do this if we have a single outlier population with a markedly different prevalence than the others.</p>
 <p>Note: when fitting a random effect we might not be interested in the estimates for each population as much as the overall intercept and precision (tau). But there is nothing to stop us also extracting estimates for a specific population - I have done this for the first population for illustration.</p>
 </div>

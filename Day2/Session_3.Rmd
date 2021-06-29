@@ -599,7 +599,12 @@ model{
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior, prev
+  #data# se_prior, sp_prior
+  
+  # The new line:
+  #data# prev
+
+  #data# Tally, TotalTests, Populations
   #monitor# prev, se, sp
   #inits# prev, se, sp, .RNG.name, .RNG.seed
   #module# lecuyer
@@ -836,19 +841,19 @@ model{
     Tally[1:4, p] ~ dmulti(prob[1:4, p], TotalTests[p])
 
     # Test1- Test2-
-	  prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
+    prob[1,p] <- (prev[p] * ((1-se[1])*(1-se[2]))) + ((1-prev[p]) * ((sp[1])*(sp[2])))
 
     # Test1+ Test2-
-  	prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
+    prob[2,p] <- (prev[p] * ((se[1])*(1-se[2]))) + ((1-prev[p]) * ((1-sp[1])*(sp[2])))
 
     # Test1- Test2+
-  	prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
+    prob[3,p] <- (prev[p] * ((1-se[1])*(se[2]))) + ((1-prev[p]) * ((sp[1])*(1-sp[2])))
 
-  	 # Test1+ Test2+
-	  prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
+    # Test1+ Test2+
+    prob[4,p] <- (prev[p] * ((se[1])*(se[2]))) + ((1-prev[p]) * ((1-sp[1])*(1-sp[2])))
     
-	  logit(prev[p]) <- intercept + population_effect[p]
-	  population_effect[p] ~ dnorm(0, tau)
+    logit(prev[p]) <- intercept + population_effect[p]
+    population_effect[p] ~ dnorm(0, tau)
   }
 
   # Priors for the intercept and precision of the random effect:
@@ -860,7 +865,9 @@ model{
   se[2] ~ dbeta(se_prior[2,1], se_prior[2,2])T(1-sp[2], )
   sp[2] ~ dbeta(sp_prior[2,1], sp_prior[2,2])
 
-  #data# Tally, TotalTests, Populations, se_prior, sp_prior
+  #data# se_prior, sp_prior
+  
+  #data# Tally, TotalTests, Populations
   #monitor# prev[1], se, sp, tau, intercept
   #inits# se, sp, tau, intercept, .RNG.name, .RNG.seed
   #modules# lecuyer
