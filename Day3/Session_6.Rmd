@@ -199,7 +199,7 @@ cat(readLines("huiwalter_MAR.txt")[3:12], sep="\n")
 
 ```{r echo=FALSE, comment=''}
 cleanup <- c(cleanup, "huiwalter_MAR.txt")
-cat(readLines("huiwalter_MAR.txt")[22:37], sep="\n")
+cat(readLines("huiwalter_MAR.txt")[22:38], sep="\n")
 ```
 
 - - -
@@ -267,10 +267,53 @@ If we have >2 populations *and* >2 tests then we can eliminate one combination a
 
   - This is a very useful form of cross-validation
 
+- - -
+
+Estimating the full model:
+
+```{r results='hide'}
+template_huiwalter(data, "model_full.txt")
+results_full <- run.jags("model_full.txt")
+
+# Check convergence etc:
+# plot(results_full)
+# results_full
+
+summary_full <- summary(results_full, vars="^s") %>%
+  as.data.frame() %>%
+  rownames_to_column("Parameter") %>%
+  mutate(Model = "Full") %>%
+  select(Model, Parameter, Median, Lower95, Upper95)
+```
 
 - - -
 
-How can we do this?
+How can we make a specific population missing?
+
+```{r results='hide'}
+crossval_data <- data %>%
+  filter(Population != 1)
+
+template_huiwalter(crossval_data, "model_mp1.txt")
+results_crossval <- run.jags("model_mp1.txt")
+summary_crossval <- summary(results_crossval, vars="^s") %>%
+  as.data.frame() %>%
+  rownames_to_column("Parameter") %>%
+  mutate(Model = "MP1") %>%
+  select(Model, Parameter, Median, Lower95, Upper95) %>%
+  bind_rows(summary_full) %>%
+  arrange(Parameter, Model)
+```
+
+- - -
+
+```{r}
+summary_crossval
+```
+
+- - -
+
+How many combinations of test missingness and population do we have?
 
 ```{r}
 all_combinations <- data %>%
@@ -282,6 +325,8 @@ all_combinations <- data %>%
 
 - - -
 
+How can we make a specific combination of test and population missing?
+
 ```{r results='hide'}
 all_results <- vector('list', length=nrow(all_combinations))
 all_summary <- vector('list', length=nrow(all_combinations))
@@ -292,20 +337,16 @@ crossval_data <- data %>%
     TRUE ~ Test1
   ))
 
-template_huiwalter(crossval_data, "model_m11.txt")
-all_results[[1]] <- run.jags("model_m11.txt")
+template_huiwalter(crossval_data, "model_mc11.txt")
+all_results[[1]] <- run.jags("model_mc11.txt")
+# Assess convergence and sample size!
 all_summary[[1]] <- summary(all_results[[1]], vars="^s") %>%
   as.data.frame() %>%
   rownames_to_column("Parameter") %>%
-  mutate(Model = "M11") %>%
+  mutate(Model = "MC11") %>%
   select(Model, Parameter, Median, Lower95, Upper95)
 ```
 
-- - -
-
-```{r}
-all_summary[[1]]
-```
 
 - - -
 
@@ -316,17 +357,19 @@ crossval_data <- data %>%
     TRUE ~ Test2
   ))
 
-template_huiwalter(crossval_data, "model_m12.txt")
-all_results[[2]] <- run.jags("model_m12.txt")
+template_huiwalter(crossval_data, "model_mc12.txt")
+all_results[[2]] <- run.jags("model_mc12.txt")
+# Assess convergence and sample size!
 all_summary[[2]] <- summary(all_results[[2]], vars="^s") %>%
   as.data.frame() %>%
   rownames_to_column("Parameter") %>%
-  mutate(Model = "M11") %>%
+  mutate(Model = "MC12") %>%
   select(Model, Parameter, Median, Lower95, Upper95)
 ```
 
+
 ```{r echo=FALSE}
-cleanup <- c(cleanup, "model_m11.txt", "model_m12.txt")
+cleanup <- c(cleanup, "model_mc11.txt", "model_mc12.txt", "model_full.txt", "model_mp1.txt")
 ```
 
 . . .
@@ -338,8 +381,7 @@ etc...!
 Are there any substantial disagreements:
 
 ```{r}
-bind_rows(all_summary) %>%
-  arrange(Parameter, Model)
+bind_rows(list(summary_full, all_summary)) %>% arrange(Parameter, Model)
 ```
 
 # Practical session 6
@@ -428,9 +470,9 @@ results_complete
 cleanup <- c(cleanup, "huiwalter_MAR_complete.txt", "huiwalter_MAR_all.txt")
 ```
 
-The posteriors for the dataset using only complete observations are wider than those for the full data. This is not entirely surprising as we only have `r data %>% na.omit() %>% nrow()` complete observations compared to `r data %>% filter(!is.na(Test1) | !is.na(Test2) | !is.na(Test3)) %>% nrow()` observations with 1 or more test result!
+The posteriors for the dataset using only complete observations are a bit wider than those for the full data. This is not entirely surprising as we only have `r data %>% na.omit() %>% nrow()` complete observations compared to `r data %>% filter(!is.na(Test1) | !is.na(Test2) | !is.na(Test3)) %>% nrow()` observations with 1 or more test result. But on the other hand, the difference is not as dramatic as we might expect given that we have twice as many individuals:  remember that including individuals with partially missing data does not magically regenerate the missing information, so partially observed individuals are worth a lot less than individuals with all 3 test results.
 
-However, because the missing results are MCAR, there is no (substantial) shift in the posterior distribution of parameter estimates.
+The most important thing is that there is no (substantial) shift in the posterior distribution of parameter estimates.  This is because the missing results are MCAR.
 
 ## Exercise 2 {.fragile}
 
@@ -524,7 +566,7 @@ Exclude one population at a time and re-analyse the data.  What do you notice ab
 
 ### Solution A {.fragile}
 
-We can fit this model with no covariance terms relatively easily:
+We can fit this model with no covariance terms relatively easily.  Note that the `template_huiwalter` function is quite happy with factors, so there is no need to convert anything to numbers - the function assumes that the reference level of the factor is the negative test:
 
 ```{r}
 template_huiwalter(anthrax, "anthrax_model_nocov.txt", covariance=FALSE)
@@ -547,15 +589,81 @@ results_allcov <- extend.jags(results_allcov, sample=90000, method="parallel")
 results_allcov
 ```
 
-Now we can see that there is some evidence for positive correlation between tests 1 and 2.  This makes biological sense because both are detecting the presence of a specific part of the bacterium (it's capsid).  The estimates for correlation with test 3 are much closer to zero.
+Now we can see that there is some evidence for positive correlation between tests 1 and 2.  This makes biological sense because both are detecting the presence of a specific part of the bacterium (the capsid).  The estimates for correlation with test 3 are much closer to zero, except perhaps for the negative covariance in sensitivity between tests 2 and 3.
 
-In this case we probably would want to run the model with only correlation between tests 1 and 2 active.
+In this case we probably would want to run the model with only correlation between tests 1 and 2 active.  This is what that model would look like:
 
-TODO
+```{r echo=FALSE, comment=''}
+nocovmod <- paste(readLines("anthrax_model_nocov.txt"), collapse="\n")
+nocovmod <- gsub('# "covse12" <- 0', '"covse12" <- 0', nocovmod)
+nocovmod <- gsub('# "covsp12" <- 0', '"covsp12" <- 0', nocovmod)
+nocovmod <- gsub('# covse12 ~ ', 'covse12 ~ ', nocovmod)
+nocovmod <- gsub('covse12 <- ', '# covse12 <- ', nocovmod)
+nocovmod <- gsub('# covsp12 ~ ', 'covsp12 ~ ', nocovmod)
+nocovmod <- gsub('covsp12 <- ', '# covsp12 <- ', nocovmod)
+cat(nocovmod, file="anthrax_model_cov12.txt")
+cleanup <- c(cleanup, "anthrax_model_cov12.txt")
+cat(nocovmod)
+```
+
+And here are the results (with 50000 iterations to be sure the effective sample size will be high enough):
+
+```{r}
+results <- run.jags("anthrax_model_cov12.txt", sample=50000)
+results
+```
+
+Excluding one population at a time just involves doing something like the following:
+
+```{r results='hide'}
+anthrax_noC <- anthrax %>% filter(Population != "Population_C")
+template_huiwalter(anthrax_noC, "anthrax_model_noC.txt", covariance=FALSE)
+```
+
+Then we need to go in and manually activate the covariance terms between tests 1 and 2.  Alternatively, if you want to use your programming skills then you could do something like the following:
+
+```{r}
+string <- paste(readLines("anthrax_model_noC.txt"), collapse="\n")
+string <- gsub('# "covse12" <- 0', '"covse12" <- 0', string)
+string <- gsub('# "covsp12" <- 0', '"covsp12" <- 0', string)
+string <- gsub('# covse12 ~ ', 'covse12 ~ ', string)
+string <- gsub('covse12 <- ', '# covse12 <- ', string)
+string <- gsub('# covsp12 ~ ', 'covsp12 ~ ', string)
+string <- gsub('covsp12 <- ', '# covsp12 <- ', string)
+cat(string, file="anthrax_model_noC.txt")
+```
+
+It would be nice if there was more granularity in the covariance argument for `template_huiwalter` ... and also in the se_priors and sp_priors arguments while I am at it!  I will try to do this at the same time as modifying the covariance terms so that they are easier to interpret, so watch for updates to runjags at some point (probably not very) soon.
+
+We can run this model as before:
+
+```{r}
+results_noC <- run.jags("anthrax_model_noC.txt", sample=50000)
+results_noC
+```
+
+And compare to the results with all 3 populations:
+
+```{r}
+all_mcmc <- combine.mcmc(results, vars="^s", return.samples = 10000)
+noc_mcmc <- combine.mcmc(results_noC, vars="^s", return.samples = 10000)
+
+bind_rows(
+  as.data.frame(all_mcmc) %>% mutate(Model = "AllPopulations"),
+  as.data.frame(noc_mcmc) %>% mutate(Model = "NoPopulationC")
+) %>%
+  pivot_longer(-Model, names_to = "Parameter", values_to = "Estimate") %>%
+  ggplot() +
+  aes(x = Estimate, col = Model) +
+  geom_density() +
+  facet_wrap( ~ Parameter, scales="free")
+```
+
+Removing the population C has affected the estimated sensitivity of the two capsid tests (compared to the impact of removing either population A or B, which I have not shown here!).  Perhaps making blood smears directly from the carcasses recovers more intact capsids than making the smears from blood swabs?
 
 
 ```{r echo=FALSE}
-cleanup <- c(cleanup, "anthrax_model_allcov.txt", "anthrax_model_nocov.txt")
+cleanup <- c(cleanup, "anthrax_model_allcov.txt", "anthrax_model_nocov.txt", "anthrax_model_noC.txt")
 ```
 
 ## Optional exercise B {.fragile}
