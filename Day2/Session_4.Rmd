@@ -316,7 +316,7 @@ cat(gsub('\t','',ml[indexes]), sep='\n')
 And edit so it looks like:
 
 ```{r, echo=FALSE, comment=''}
-ml[indexes] <- c('	# Covariance in sensitivity between ThroatAG and ThroatPCR tests:', '	covse23 ~ dunif( (se[1]-1)*(1-se[2]) , min(se[1],se[2]) - se[1]*se[2] )  ## if the sensitivity of these tests may be correlated', '	 # covse23 <- 0  ## if the sensitivity of these tests can be assumed to be independent','	# Covariance in specificity between ThroatAG and ThroatPCR tests:', '	covsp23 ~ dunif( (sp[1]-1)*(1-sp[2]) , min(sp[1],sp[2]) - sp[1]*sp[2] )  ## if the specificity of these tests may be correlated', '	 # covsp23 <- 0  ## if the specificity of these tests can be assumed to be independent')
+ml[indexes] <- c('	# Covariance in sensitivity between ThroatAG and ThroatPCR tests:', '	covse23 ~ dunif( (se[2]-1)*(1-se[3]) , min(se[2],se[3]) - se[2]*se[3] )  ## if the sensitivity of these tests may be correlated', '	 # covse23 <- 0  ## if the sensitivity of these tests can be assumed to be independent','	# Covariance in specificity between ThroatAG and ThroatPCR tests:', '	covsp23 ~ dunif( (sp[2]-1)*(1-sp[3]) , min(sp[2],sp[3]) - sp[2]*sp[3] )  ## if the specificity of these tests may be correlated', '	 # covsp23 <- 0  ## if the specificity of these tests can be assumed to be independent')
 cat(ml, file='covidmodel.txt', sep='\n')
 ml <- readLines('covidmodel.txt')
 cat(gsub('\t','',ml[indexes]), sep='\n')
