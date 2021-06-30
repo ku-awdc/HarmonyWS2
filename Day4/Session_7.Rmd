@@ -54,21 +54,25 @@ The real difficulty lies in the interpretation
 lrmod <- "model{
 
   for(i in 1:N){
-    Outcome[i] ~ dbern(prob[i])
+    Observation[i] ~ dbern(prob[i])
     logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
   }
 
-  intercept ~ dnorm(0, 10^-6)
-  beta1 ~ dnorm(0, 10^-6)
-  beta2 ~ dnorm(0, 10^-6)
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
 
-  #data# N, Outcome, Category, Covariate
+  #data# N, Observation, NC, Category, Covariate
   #monitor# intercept, beta1, beta2
   #inits# intercept, beta1, beta2
-}"
+}
+"
 cat(lrmod)
-cat(lrmod, file="logistic_imperfect.txt")
-cleanup <- c(cleanup, "logistic_imperfect.txt")
+cat(lrmod, file="logistic_regression.txt")
+cleanup <- c(cleanup, "logistic_regression.txt", "logistic_imperfect.txt", "logistic_2test.txt")
 ```
 
 - - -
@@ -78,7 +82,7 @@ cleanup <- c(cleanup, "logistic_imperfect.txt")
 lrmod <- "model{
 
   for(i in 1:N){
-    Outcome[i] ~ dbern(obs_prob[i])
+    Observation[i] ~ dbern(obs_prob[i])
     obs_prob[i] <- prob[i]*se + (1-prob[i])*(1-sp)
     logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
   }
@@ -86,14 +90,18 @@ lrmod <- "model{
   se ~ dbeta(1,1)T(1-sp, )
   sp ~ dbeta(1,1)
 
-  intercept ~ dnorm(0, 10^-6)
-  beta1 ~ dnorm(0, 10^-6)
-  beta2 ~ dnorm(0, 10^-6)
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
 
-  #data# N, Outcome, Category, Covariate
+  #data# N, Observation, NC, Category, Covariate
   #monitor# intercept, beta1, beta2, se, sp
   #inits# intercept, beta1, beta2, se, sp
-}"
+}
+"
 cat(lrmod)
 cat(lrmod, file="logistic_imperfect.txt")
 ```
@@ -105,7 +113,7 @@ cat(lrmod, file="logistic_imperfect.txt")
 lrmod <- "model{
 
   for(i in 1:N){
-    Outcome[i] ~ dbern(obs_prob[i])
+    Observation[i] ~ dbern(obs_prob[i])
     obs_prob[i] <- prob[i]*se + (1-prob[i])*(1-sp)
     logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
   }
@@ -113,14 +121,18 @@ lrmod <- "model{
   se ~ dbeta(148.43, 16.49)T(1-sp, )
   sp ~ dbeta(240.03, 12.63)
 
-  intercept ~ dnorm(0, 10^-6)
-  beta1 ~ dnorm(0, 10^-6)
-  beta2 ~ dnorm(0, 10^-6)
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
 
-  #data# N, Outcome, Category, Covariate
+  #data# N, Observation, NC, Category, Covariate
   #monitor# intercept, beta1, beta2, se, sp
   #inits# intercept, beta1, beta2, se, sp
-}"
+}
+"
 cat(lrmod)
 cat(lrmod, file="logistic_imperfect.txt")
 ```
@@ -132,26 +144,88 @@ cat(lrmod, file="logistic_imperfect.txt")
 lrmod <- "model{
 
   for(i in 1:N){
-    Outcome[i] ~ dbern(obs_prob[i])
+    Observation[i] ~ dbern(obs_prob[i])
+    obs_prob[i] <- prob[i]*se + (1-prob[i])*(1-sp)
+    logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
+  }
+
+  se <- 0.9
+  sp <- 0.95
+
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
+
+  #data# N, Observation, NC, Category, Covariate
+  #monitor# intercept, beta1, beta2
+  #inits# intercept, beta1, beta2
+}
+"
+cat(lrmod)
+cat(lrmod, file="logistic_imperfect.txt")
+```
+
+- - -
+
+
+```{r echo=FALSE, comment=""}
+lrmod <- "model{
+
+  for(i in 1:N){
+    Observation[i] ~ dbern(obs_prob[i])
+    obs_prob[i] <- prob[i]*se + (1-prob[i])*(1-sp)
+    logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
+  }
+
+  #data# se, sp
+
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
+
+  #data# N, Observation, NC, Category, Covariate
+  #monitor# intercept, beta1, beta2
+  #inits# intercept, beta1, beta2
+}
+"
+cat(lrmod)
+cat(lrmod, file="logistic_imperfect.txt")
+```
+
+- - -
+
+
+```{r echo=FALSE, comment=""}
+lrmod <- "model{
+
+  for(i in 1:N){
+    Observation[i] ~ dbern(obs_prob[i])
     obs_prob[i] <- prob[i]*se[Test[i]] + (1-prob[i])*(1-sp[Test[i]])
     logit(prob[i]) <- intercept + beta1[Category[i]] + beta2*Covariate[i]
   }
 
-  se[1] ~ dbeta(148.43, 16.49)T(1-sp[1], )
-  sp[1] ~ dbeta(240.03, 12.63)
-  se[2] ~ dbeta(183.59, 9.98)T(1-sp[2], )
-  sp[2] ~ dbeta(199.22, 0.53)
+  #data# se, sp
 
-  intercept ~ dnorm(0, 10^-6)
-  beta1 ~ dnorm(0, 10^-6)
-  beta2 ~ dnorm(0, 10^-6)
+  intercept ~ dnorm(0, 0.01)
+  beta1[1] <- 0
+  for(c in 2:NC){
+    beta1[c] ~ dnorm(0, 0.01)
+  }
+  beta2 ~ dnorm(0, 0.01)
 
-  #data# N, Outcome, Category, Covariate, Test
-  #monitor# intercept, beta1, beta2, se, sp
-  #inits# intercept, beta1, beta2, se, sp
-}"
+  #data# N, Observation, NC, Category, Covariate, Test
+  #monitor# intercept, beta1, beta2
+  #inits# intercept, beta1, beta2
+}
+"
 cat(lrmod)
-cat(lrmod, file="logistic_imperfect.txt")
+cat(lrmod, file="logistic_2test.txt")
 ```
 
 ## Other types of GL(M)M
@@ -228,7 +302,7 @@ But does your data match your ambitions?
 
 ## Points to consider {.fragile}
 
-1. When is there a benefit of adding imperfect test information?
+1. When is there a benefit to adding imperfect test characteristics?
 
 2. When is there no real benefit?
 
@@ -237,17 +311,196 @@ But does your data match your ambitions?
 
 ## Exercise 1
 
-Use the dataset provided
-  
-  - Only intercept is affected when test is consistent
-  - If test is inconsistent then we have problems
-  - Bigger problems when the test is confounded with predictor
+Simulate some data representing observed test outcomes along with one categorical predictor (with two levels) and one continuous predictor, with a single imperfect test.  Use the following R code:
+
+```{r}
+set.seed(2021-07-01)
+N <- 1000
+
+sim_intercept <- -0.5
+
+NC <- 2
+category_probs <- rep(1, NC)/NC
+sim_beta1 <- c(0, 0.6)
+stopifnot(length(sim_beta1)==NC)
+
+covariate_mean <- 0
+covariate_sd <- 0.5
+sim_beta2 <- 0.3
+
+lr_data <- tibble(
+  Animal = 1:N, 
+  Category = sample.int(NC, N, replace=TRUE, prob=category_probs),
+  Covariate = rnorm(N, covariate_mean, covariate_sd),
+  probability = plogis(sim_intercept + sim_beta1[Category] + sim_beta2*Covariate),
+  Status = rbinom(N, 1, probability)
+)
+```
+
+We can see the true relationship between predictors and probability of the outcome:
+
+```{r}
+ggplot(lr_data) +
+  aes(x = Covariate, y = probability, col = factor(Category)) +
+  geom_line()
+```
+
+Add a new column `Observation` to this data, representing an imperfect diagnostic test based on the true `Status` but with sensitivity of 50% and specificity of 99%.  Either try to write this R code yourself or borrow it from an earlier session.
+
+Now use the following simple logistic regression model to analyse the data:
+
+```{r echo=FALSE, comment=''}
+cat(readLines("logistic_regression.txt"), sep="\n")
+```
+
+You will need to make sure that runjags can find initial values in your working environment, for example:
+
+```{r}
+intercept <- list(chain1=-4, chain2=4)
+beta1 <- list(chain1=c(NA, -4), chain2=c(NA, 4))
+beta2 <- list(chain1=4, chain2=-4)
+```
+
+You will also need to pass the data frame `lr_data` to `run.jags` using the `data` argument.
+
+How do the parameter estimates compare to the true values?  You can see the true values using:
+
+```{r}
+sim_intercept
+sim_beta1
+sim_beta2
+```
+
+
+### Solution 1
+
+We can modify the data to include outcome as follows:
+
+```{r}
+se <- 0.5
+sp <- 0.99
+
+lr_data <- lr_data %>%
+  mutate(Observation = rbinom(n(), 1, Status*se + (1-Status)*(1-sp)))
+```
+
+Then we need to set the initial values:
+
+```{r}
+intercept <- list(chain1=-4, chain2=4)
+beta1 <- list(chain1=c(NA, rep(-4, NC-1)), chain2=c(NA, rep(4, NC-1)))
+beta2 <- list(chain1=4, chain2=-4)
+```
+
+Then we can run the model:
+
+```{r}
+results_lr <- run.jags("logistic_regression.txt", n.chains=2, data=lr_data)
+# Remmber to check convergence and effective sample size!
+# plot(results_lr)
+results_lr
+```
+
+The median estimates for beta1 and beta1 are not too far away from the simulation parameter values, and at the very least they are contained within the 95% CI.  However, the intercept parameter is under-estimated compared to the simulation value of -0.5.  This is due to the difference between the apparant prevalence and trur prevalence caused by the poor sensitivity of the test.
+
+The other thing to note is that this model takes a lot longer to run than a Hui-Walter model - this is due to looping over individuals with individual covariates.  If we only had categorical predictors then we would be much better off collapsing the observed combinations of categorical predictors together, so that our outcome was Binomial and not just Bernoulli (in this case we would be looping over 2 categorical predictor levels, and not 1000 observations).  However, there is no way of doing this with continuous covariates unless you are willing to categorise them into a number of discrete bins.
+
+
+## Exercise 2
+
+Now analyse the same data using the following imperfect test model:
+
+```{r echo=FALSE, comment=''}
+cat(readLines("logistic_imperfect.txt"), sep="\n")
+```
+
+For illustration purposes we are assuming se and sp are fixed to the same values as we used to simulate the data.  In reality you would probably use mean/median estimates from a published source, and possibly include some kind of uncertainty either by putting Beta priors (obtained using `PriorGen::findbeta()`) on these parameters, or by doing a sensitivity analysis by varying the se and sp parameters.
+
+Fit the model to the data.  What has changed relative to the analysis from exercise 1?
+
+
+### Solution 2
+
+This is very similar to the solution for exercise 1, just with a different model:
+
+```{r}
+results_imp <- run.jags("logistic_imperfect.txt", n.chains=2, data=lr_data)
+# Remmber to check convergence and effective sample size!
+# plot(results_imp)
+results_imp
+```
+
+This model is slower than the logsitic regression model on the same data because the model is more complicated.  But has it made any difference to the estimates?  There are small differences in the coefficients (beta1 and beta2), but nothing substantial.  The intercept parameter has been affected, as it now reflects the true prevalence rather than the observed prevalence.  But we don't usually care about the intercept anyway.
+
+So in this case we don't really gain anything by using an imperfect test model.  We might as well just say that the imperfect diagnostic test characteristics are one part of the variability that is captured by the Binomial distribution response, and that the intercept reflects the average observed prevalence and not the average true prevalence.  The only exception to this is where one or more of the covariates has an extremely strong affect on the true prevalence, in which case we may under-estimate the magnitude of this effect due to the inter-play between sensitivity, specificity and prevalence.
+
+
+## Exercise 3
+
+Now let's make this more complicated.  Simulate two different tests, where the first test is used for animals that have a value of 1 for the categorical predictor, and the second test is used for animals that have a value of 2 for the categorical predictor (these could be animal groups or farms, for example).  The first test has the same sensitivity and specificity as before, but the second test has higher sensitivity but lower specifity (both are 95% for this test).  Write the R code yourself if you want to, otherwise see the hint below (just above the solution).
+
+Now analyse the same data using the original logistic regression model, as well as the following multiple-imperfect-tests model:
+
+```{r echo=FALSE, comment=''}
+cat(readLines("logistic_2test.txt"), sep="\n")
+```
+
+Fit the model to the data.  What has changed relative to the analysis from exercise 2?
+
+#### Hint
+
+You could use this R code for simulating data:
+
+```{r}
+se <- c(0.5, 0.99)
+sp <- c(0.95, 0.95)
+
+lr_2test <- lr_data %>%
+  mutate(Obs1 = rbinom(n(), 1, Status*se[1] + (1-Status)*(1-sp[1]))) %>%
+  mutate(Obs2 = rbinom(n(), 1, Status*se[2] + (1-Status)*(1-sp[2]))) %>%
+  mutate(Test = Category) %>%
+  mutate(Observation = case_when(
+    Test == 1 ~ Obs1,
+    Test == 2 ~ Obs2
+  ))
+```
+
+
+### Solution 3
+
+The first part of this is the same as the solution for exercise 1, just with the new observation:
+
+```{r}
+results_lr_2t <- run.jags("logistic_regression.txt", n.chains=2, data=lr_2test)
+# Remmber to check convergence and effective sample size!
+# plot(results_lr_2t)
+results_lr_2t
+```
+
+You can see that we get quite different estimates for beta1 compared to before!  This is because the diagnostic test is confounded with the categorical predictor.  This confounding has caused us to over-estimate the effect of the categorical predictor.
+
+However, we can fit the model that allows the test to differ:
+
+```{r}
+results_imp_2t <- run.jags("logistic_2test.txt", n.chains=2, data=lr_2test)
+# Remmber to check convergence and effective sample size!
+# plot(results_imp_2t)
+results_imp_2t
+```
+
+In this case we control for the confounding between the test type and categorical predictor, and end up recovering more sensible estimates for beta1 (as well as the intercept and beta2).
+
+Note that none of these models allow us to estimate sensitivity or specificity:  there simply is not enough information in the data.  We are therefore forced to fix the values of sensitivity and specificity within the model and assume that these are correct!  The only alternative is to fit a simple fixed effect of the test type in a standard GLM, in which case you can estimate the association between the test type and the observed prevalence.  However, where test type is completely confounded with another predictor variable (as in this case), then we are unable to separate those two effects without incorporating prior knowledge for the diagnostic test performance.
 
 
 ## Optional exercises
 
-Re-visit the exercises (and optional exercises) from sessions 3-4 that you did not finish!
+There are two options:
 
+  1.  Re-visit the exercises (and optional exercises) from sessions 3-6 that you have not already finished.
+
+  1.  Look at your own data and feel free to ask us questions
+  
 
 `r exercise_end()`
 
