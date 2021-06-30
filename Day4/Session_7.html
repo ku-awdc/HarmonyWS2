@@ -334,45 +334,34 @@ pre code {
 results &lt;- run.jags(&quot;linear_model.txt&quot;)
 ## Loading required namespace: rjags
 ## module glm loaded
-## module dic loaded
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Note: the model did not require adaptation
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variable &#39;group_effect[1]&#39; appears to be
-## non-stochastic; it will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 6 variables....
-## Finished running the simulation</code></pre>
+## module dic loaded</code></pre>
 <hr />
 <pre class="r"><code>results
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                              
-##                      Lower95   Median Upper95     Mean      SD Mode     MCerr
-## regression_precision 0.86157   1.9801  3.4438    2.056 0.68269   -- 0.0052744
-## intercept             4.5614   5.0281  5.4887   5.0286 0.23474   -- 0.0016349
-## group_effect[1]            0        0       0        0       0    0        --
-## group_effect[2]      -1.0011 -0.37238 0.31377 -0.36943  0.3331   -- 0.0023366
-## deviance              40.182   42.759   48.65   43.426  2.6369   --  0.021289
-## resid.sum.sq          8.7293   9.4319  12.178   9.8296  1.2501   -- 0.0098521
-##                                                      
-##                      MC%ofSD SSeff      AC.10    psrf
-## regression_precision     0.8 16753  0.0060706       1
-## intercept                0.7 20617 -0.0015158       1
-## group_effect[1]           --    --         --      --
-## group_effect[2]          0.7 20322  -0.016675       1
-## deviance                 0.8 15342  0.0056218 0.99996
-## resid.sum.sq             0.8 16101  -0.012155 0.99997
+##                                                                             
+##                      Lower95   Median Upper95    Mean      SD Mode     MCerr
+## regression_precision 0.86022   1.9836  3.4454  2.0606  0.6892   -- 0.0053507
+## intercept              4.571   5.0313  5.4983  5.0324  0.2351   -- 0.0016624
+## group_effect[1]            0        0       0       0       0    0        --
+## group_effect[2]       -1.033 -0.37246 0.27559 -0.3712 0.33135   --  0.002343
+## deviance              40.187   42.762  48.622  43.435  2.6333   --  0.020957
+## resid.sum.sq          8.7293     9.44  12.241  9.8352  1.2346   -- 0.0097759
+##                                                        
+##                      MC%ofSD SSeff        AC.10    psrf
+## regression_precision     0.8 16591   -0.0096324       1
+## intercept                0.7 20000   -0.0039747  1.0001
+## group_effect[1]           --    --           --      --
+## group_effect[2]          0.7 20000   -0.0040454       1
+## deviance                 0.8 15789 -0.000015646 0.99997
+## resid.sum.sq             0.8 15948   -0.0050273  1.0004
 ## 
 ## Model fit assessment:
-## DIC = 46.77657  (range between chains: 46.7725 - 46.78064)
+## DIC = 46.84075  (range between chains: 46.83184 - 46.84965)
 ## [PED not available from the stored object]
-## Estimated effective number of parameters:  pD = 3.35054
+## Estimated effective number of parameters:  pD = 3.40604
 ## 
-## Total time taken: 0.9 seconds</code></pre>
+## Total time taken: 1.3 seconds</code></pre>
 <hr />
 <p>Supported features:</p>
 <ul>
@@ -410,7 +399,8 @@ results &lt;- run.jags(&quot;linear_model.txt&quot;)
 <ul>
 <li>Feedback on the course would be extremely welcome!
 <ul>
-<li>I will send an email later today with a survey link</li>
+<li><a href="https://www.survey-xact.dk/LinkCollector?key=RKMUENCXS11N" class="uri">https://www.survey-xact.dk/LinkCollector?key=RKMUENCXS11N</a></li>
+<li>I will send a reminder email later today with (the same) survey link</li>
 </ul></li>
 </ul>
 <div class="incremental">
@@ -508,36 +498,25 @@ beta1 &lt;- list(chain1=c(NA, rep(-4, NC-1)), chain2=c(NA, rep(4, NC-1)))
 beta2 &lt;- list(chain1=4, chain2=-4)</code></pre>
 <p>Then we can run the model:</p>
 <pre class="r"><code>results_lr &lt;- run.jags(&quot;logistic_regression.txt&quot;, n.chains=2, data=lr_data)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Note: the model did not require adaptation
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variable &#39;beta1[1]&#39; appears to be non-stochastic;
-## it will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 4 variables....
-## Finished running the simulation
 # Remmber to check convergence and effective sample size!
 # plot(results_lr)
 results_lr
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                               
-##            Lower95 Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
-## intercept  -1.5687 -1.344 -1.1253 -1.3464  0.1137   -- 0.0011077       1 10536
-## beta1[1]         0      0       0       0       0    0        --      --    --
-## beta1[2]  0.031168 0.3326 0.62474 0.33142 0.15203   -- 0.0014494       1 11003
-## beta2      0.14354 0.4379 0.73538 0.43828 0.15241   -- 0.0014536       1 10993
+##                                                                                
+##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## intercept  -1.5828 -1.3459  -1.133 -1.3474 0.11455   -- 0.0011394       1 10107
+## beta1[1]         0       0       0       0       0    0        --      --    --
+## beta1[2]  0.047304 0.32925 0.63672 0.33161 0.15063   -- 0.0014449       1 10869
+## beta2      0.14368 0.43546 0.74096  0.4364 0.15335   -- 0.0014832       1 10689
 ##                            
 ##                AC.10   psrf
-## intercept  -0.005265 1.0001
+## intercept   0.008381 1.0001
 ## beta1[1]          --     --
-## beta1[2]  -0.0020854 1.0002
-## beta2      -0.010125      1
+## beta1[2]   0.0029632 1.0003
+## beta2     -0.0029473      1
 ## 
-## Total time taken: 20.9 seconds</code></pre>
+## Total time taken: 28.4 seconds</code></pre>
 <p>The median estimates for beta1 and beta1 are not too far away from the simulation parameter values, and at the very least they are contained within the 95% CI. However, the intercept parameter is under-estimated compared to the simulation value of -0.5. This is due to the difference between the apparant prevalence and trur prevalence caused by the poor sensitivity of the test.</p>
 <p>The other thing to note is that this model takes a lot longer to run than a Hui-Walter model - this is due to looping over individuals with individual covariates. If we only had categorical predictors then we would be much better off collapsing the observed combinations of categorical predictors together, so that our outcome was Binomial and not just Bernoulli (in this case we would be looping over 2 categorical predictor levels, and not 1000 observations). However, there is no way of doing this with continuous covariates unless you are willing to categorise them into a number of discrete bins.</p>
 </div>
@@ -572,36 +551,25 @@ results_lr
 <h3>Solution 2</h3>
 <p>This is very similar to the solution for exercise 1, just with a different model:</p>
 <pre class="r"><code>results_imp &lt;- run.jags(&quot;logistic_imperfect.txt&quot;, n.chains=2, data=lr_data)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Adapting the model for 1000 iterations...
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variable &#39;beta1[1]&#39; appears to be non-stochastic;
-## it will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 4 variables....
-## Finished running the simulation
 # Remmber to check convergence and effective sample size!
 # plot(results_imp)
 results_imp
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                              
-##            Lower95   Median   Upper95     Mean      SD Mode     MCerr MC%ofSD
-## intercept -0.69562 -0.37893 -0.067707 -0.37678 0.16044   -- 0.0023857     1.5
-## beta1[1]         0        0         0        0       0    0        --      --
-## beta1[2]  0.055064  0.50079   0.94134    0.502 0.22745   -- 0.0033666     1.5
-## beta2       0.2072  0.66564    1.1491  0.66953 0.24007   -- 0.0021526     0.9
-##                                
-##           SSeff    AC.10   psrf
-## intercept  4523 0.009659 1.0002
-## beta1[1]     --       --     --
-## beta1[2]   4565 0.008894 1.0007
-## beta2     12437 0.002218 1.0001
+##                                                                             
+##            Lower95   Median  Upper95     Mean      SD Mode     MCerr MC%ofSD
+## intercept -0.70312 -0.38361 -0.06017 -0.38237  0.1632   -- 0.0025335     1.6
+## beta1[1]         0        0        0        0       0    0        --      --
+## beta1[2]  0.065147  0.51132  0.98049  0.51135 0.23169   -- 0.0035966     1.6
+## beta2      0.20952  0.66768   1.1578   0.6721 0.24198   -- 0.0021778     0.9
+##                                 
+##           SSeff     AC.10   psrf
+## intercept  4149   0.02969 1.0001
+## beta1[1]     --        --     --
+## beta1[2]   4150    0.0276 1.0002
+## beta2     12345 0.0018917 1.0004
 ## 
-## Total time taken: 1.2 minutes</code></pre>
+## Total time taken: 1.5 minutes</code></pre>
 <p>This model is slower than the logsitic regression model on the same data because the model is more complicated. But has it made any difference to the estimates? There are small differences in the coefficients (beta1 and beta2), but nothing substantial. The intercept parameter has been affected, as it now reflects the true prevalence rather than the observed prevalence. But we don’t usually care about the intercept anyway.</p>
 <p>So in this case we don’t really gain anything by using an imperfect test model. We might as well just say that the imperfect diagnostic test characteristics are one part of the variability that is captured by the Binomial distribution response, and that the intercept reflects the average observed prevalence and not the average true prevalence. The only exception to this is where one or more of the covariates has an extremely strong affect on the true prevalence, in which case we may under-estimate the magnitude of this effect due to the inter-play between sensitivity, specificity and prevalence.</p>
 </div>
@@ -651,50 +619,28 @@ lr_2test &lt;- lr_data %&gt;%
 <h3>Solution 3</h3>
 <p>The first part of this is the same as the solution for exercise 1, just with the new observation:</p>
 <pre class="r"><code>results_lr_2t &lt;- run.jags(&quot;logistic_regression.txt&quot;, n.chains=2, data=lr_2test)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Note: the model did not require adaptation
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variable &#39;beta1[1]&#39; appears to be non-stochastic;
-## it will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 4 variables....
-## Finished running the simulation
 # Remmber to check convergence and effective sample size!
 # plot(results_lr_2t)
 results_lr_2t
 ## 
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
-##                                                                                
-##            Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
-## intercept  -1.5928 -1.3676  -1.144 -1.3688   0.115   -- 0.0011788       1  9517
-## beta1[1]         0       0       0       0       0    0        --      --    --
-## beta1[2]    1.2726  1.5519  1.8397  1.5506 0.14539   -- 0.0014014       1 10763
-## beta2     0.077577 0.36661 0.63145 0.36548 0.14243   -- 0.0012712     0.9 12554
-##                            
-##                AC.10   psrf
-## intercept 0.00071706 1.0001
-## beta1[1]          --     --
-## beta1[2]   0.0041802      1
-## beta2     -0.0016801 1.0001
+##                                                                               
+##           Lower95  Median Upper95    Mean      SD Mode     MCerr MC%ofSD SSeff
+## intercept -1.5947 -1.3683 -1.1483 -1.3687 0.11337   -- 0.0011264       1 10129
+## beta1[1]        0       0       0       0       0    0        --      --    --
+## beta1[2]    1.274  1.5486  1.8378  1.5496 0.14397   -- 0.0013508     0.9 11361
+## beta2     0.10058 0.36552 0.65456 0.36712 0.14212   -- 0.0012911     0.9 12117
+##                             
+##                AC.10    psrf
+## intercept   0.010102 0.99998
+## beta1[1]          --      --
+## beta1[2]    0.012912 0.99998
+## beta2     -0.0082709       1
 ## 
-## Total time taken: 22.2 seconds</code></pre>
+## Total time taken: 32.6 seconds</code></pre>
 <p>You can see that we get quite different estimates for beta1 compared to before! This is because the diagnostic test is confounded with the categorical predictor. This confounding has caused us to over-estimate the effect of the categorical predictor.</p>
 <p>However, we can fit the model that allows the test to differ:</p>
 <pre class="r"><code>results_imp_2t &lt;- run.jags(&quot;logistic_2test.txt&quot;, n.chains=2, data=lr_2test)
-## Compiling rjags model...
-## Calling the simulation using the rjags method...
-## Adapting the model for 1000 iterations...
-## Burning in the model for 4000 iterations...
-## Running the model for 10000 iterations...
-## Simulation complete
-## Calculating summary statistics...
-## Note: The monitored variable &#39;beta1[1]&#39; appears to be non-stochastic;
-## it will not be included in the convergence diagnostic
-## Calculating the Gelman-Rubin statistic for 4 variables....
-## Finished running the simulation
 # Remmber to check convergence and effective sample size!
 # plot(results_imp_2t)
 results_imp_2t
@@ -702,18 +648,18 @@ results_imp_2t
 ## JAGS model summary statistics from 20000 samples (chains = 2; adapt+burnin = 5000):
 ##                                                                             
 ##            Lower95   Median  Upper95     Mean      SD Mode     MCerr MC%ofSD
-## intercept -0.98818 -0.64213 -0.27775 -0.64323 0.18322   -- 0.0047587     2.6
+## intercept -0.99759 -0.64539 -0.28498 -0.64733 0.18174   -- 0.0048261     2.7
 ## beta1[1]         0        0        0        0       0    0        --      --
-## beta1[2]   0.36163    0.747   1.1547  0.74925  0.2053   -- 0.0053612     2.6
-## beta2     0.088418  0.42077  0.77435  0.42086 0.17463   -- 0.0015861     0.9
-##                                  
-##           SSeff     AC.10    psrf
-## intercept  1482   0.22419   1.002
-## beta1[1]     --        --      --
-## beta1[2]   1466   0.22748  1.0021
-## beta2     12121 0.0047307 0.99999
+## beta1[2]   0.34913  0.75261   1.1461  0.75314 0.20311   -- 0.0055299     2.7
+## beta2      0.08368  0.42021   0.7585  0.42016 0.17347   -- 0.0015812     0.9
+##                                 
+##           SSeff     AC.10   psrf
+## intercept  1418   0.24601  1.004
+## beta1[1]     --        --     --
+## beta1[2]   1349   0.23957 1.0039
+## beta2     12036 -0.018944 1.0001
 ## 
-## Total time taken: 1.2 minutes</code></pre>
+## Total time taken: 1.7 minutes</code></pre>
 <p>In this case we control for the confounding between the test type and categorical predictor, and end up recovering more sensible estimates for beta1 (as well as the intercept and beta2).</p>
 <p>Note that none of these models allow us to estimate sensitivity or specificity: there simply is not enough information in the data. We are therefore forced to fix the values of sensitivity and specificity within the model and assume that these are correct! The only alternative is to fit a simple fixed effect of the test type in a standard GLM, in which case you can estimate the association between the test type and the observed prevalence. However, where test type is completely confounded with another predictor variable (as in this case), then we are unable to separate those two effects without incorporating prior knowledge for the diagnostic test performance.</p>
 </div>
