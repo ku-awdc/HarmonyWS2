@@ -336,7 +336,7 @@ How can we generate a Beta( , ) prior from this?
 
 ```{r}
 library("PriorGen")
-findbeta(themedian = 0.94, percentile=0.95, percentile.value = 0.92)
+findbeta(themedian = 0.94, percentile.value = 0.92)
 hpd(qbeta, shape1=429.95, shape2=27.76)
 ```
 
@@ -494,17 +494,17 @@ Parameters for Sensitivity: mean estimate = 0.9 (95% CI: 0.85 - 0.95):
 [Note: this is `themean` rather than `themedian`!]
 
 ```{r}
-PriorGen::findbeta(themean=0.9, percentile = 0.975, percentile.value = 0.85)
-hpd(qbeta, shape1=148.43, shape2=16.49)
-curve(dbeta(x, 148.43, 16.49), from=0, to=1)
+PriorGen::findbeta(themean=0.9, percentile.value = 0.85)
+hpd(qbeta, shape1=101.43, shape2=11.27)
+curve(dbeta(x, 101.43, 11.27), from=0, to=1)
 ```
 
 Parameters for Specificity: mean estimate = 0.95 (95%CI: 0.92-0.97):
 
 ```{r}
-PriorGen::findbeta(themean=0.95, percentile = 0.975, percentile.value = 0.92)
-hpd(qbeta, shape1=240.03, shape2=12.63)
-curve(dbeta(x, 240.03, 12.63), from=0, to=1)
+PriorGen::findbeta(themean=0.95, percentile.value = 0.92)
+hpd(qbeta, shape1=162.53, shape2=8.55)
+curve(dbeta(x, 162.53, 8.55), from=0, to=1)
 ```
 
 Here is the updated model using the new prior values:
@@ -526,8 +526,8 @@ hw_definition <- c("model{
 	prob[4] <- (prev * ((se[1])*(se[2]))) + ((1-prev) * ((1-sp[1])*(1-sp[2])))
 
   prev ~ dbeta(1, 1)
-  se[1] ~ dbeta(148.43, 16.49)T(1-sp[1], )
-  sp[1] ~ dbeta(240.03, 12.63)
+  se[1] ~ dbeta(101.43, 11.27)T(1-sp[1], )
+  sp[1] ~ dbeta(162.53, 8.55)
   se[2] ~ dbeta(1, 1)T(1-sp[2], )
   sp[2] ~ dbeta(1, 1)
 
@@ -704,11 +704,11 @@ Tally <- as.numeric(twoXtwo)
 #  * Specificity = 0.999 (95%CI: 0.99 - 1.00)
 
 PriorGen::findbeta(themedian = 0.95, percentile=0.95, percentile.value = 0.92)
-se_prior[1,] <- c(183.59, 9.98)
+se_prior[1,] <- c(101.43, 11.27)
 TeachingDemos::hpd(qbeta, shape1=se_prior[1,1], shape2=se_prior[1,2])
 
 PriorGen::findbeta(themedian = 0.999, percentile=0.95, percentile.value = 0.99)
-sp_prior[1,] <- c(199.22, 0.53)
+sp_prior[1,] <- c(162.53, 8.55)
 TeachingDemos::hpd(qbeta, shape1=sp_prior[1,1], shape2=sp_prior[1,2])
 
 # Now our hyper-prior parameters look like:

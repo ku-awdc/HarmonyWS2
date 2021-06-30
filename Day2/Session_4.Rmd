@@ -39,7 +39,7 @@ In *traditional* diagnostic test evaluation, one test is assumed to be a gold st
 
 Using a latent class model each new test adds new information - so we should analyse all available test results in the same model
 
-## Simulating data
+## Simulating data: simple example
 
 Simulating data using an arbitrary number of independent tests is quite straightforward:
 
@@ -117,7 +117,7 @@ prob[3,p] <-  prev[p] * (se[1]*se[2]*se[3]) +
 - In both situations we have pairwise correlation between some of the tests
 
 
-## Dealing with correlation
+## Dealing with correlation: Covid example
 
 It helps to consider the data simulation as a (simplified) biological process (where my parameters are not representative of real life!):
 
@@ -382,7 +382,7 @@ results
 
 ## Exercise 1 {.fragile}
 
-Use the template_huiwalter function to look at the simple 2-test 5-population example from earlier.  Use this data simulation code:
+Use the template_huiwalter function to look at the simple 2-test 5-population example from session 3.  Use this data simulation code:
 
 ```{r}
 # Set a random seed so that the data are reproducible:
@@ -410,7 +410,7 @@ data <- tibble(Population = sample(seq_len(Populations), N, replace=TRUE)) %>%
 template_huiwalter(data, outfile="template_2test.txt")
 ```
 
-Look at the model code and familiarise yourself with how the model is set out (there are some small differences, but the overall code is equivalent).  Make sure you can add a .RNG.seed, modify the priors, and add a deviance monitor.  Run the model.
+Look at the model code and familiarise yourself with how the model is set out (there are some small differences, but the overall code is equivalent).  Make sure you can modify the priors and add a deviance monitor.  Run the model.
 
 Now activate the correlation terms between tests 1 and 2.  Is anything different about the results?
 
@@ -441,7 +441,7 @@ Activating the covariance terms with 2 tests has made the model less identifiabl
 
 ## Exercise 2 {.fragile}
 
-Simulate some Covid data based on the code given above, and analyse the data using the default priors.  Interpret the results and compare them to the known values:
+Simulate some Covid data based on the R code given above (under "Dealing with correlation: Covid example") and analyse the data using the default priors.  Interpret the results and compare them to the known values:
 
 ```{r}
 covid_sensitivity
