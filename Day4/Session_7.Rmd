@@ -397,7 +397,7 @@ Then we can run the model:
 
 ```{r}
 results_lr <- run.jags("logistic_regression.txt", n.chains=2, data=lr_data)
-# Remmber to check convergence and effective sample size!
+# Remember to check convergence and effective sample size!
 # plot(results_lr)
 results_lr
 ```
@@ -426,7 +426,7 @@ This is very similar to the solution for exercise 1, just with a different model
 
 ```{r}
 results_imp <- run.jags("logistic_imperfect.txt", n.chains=2, data=lr_data)
-# Remmber to check convergence and effective sample size!
+# Remember to check convergence and effective sample size!
 # plot(results_imp)
 results_imp
 ```
@@ -473,7 +473,7 @@ The first part of this is the same as the solution for exercise 1, just with the
 
 ```{r}
 results_lr_2t <- run.jags("logistic_regression.txt", n.chains=2, data=lr_2test)
-# Remmber to check convergence and effective sample size!
+# Remember to check convergence and effective sample size!
 # plot(results_lr_2t)
 results_lr_2t
 ```
@@ -484,7 +484,7 @@ However, we can fit the model that allows the test to differ:
 
 ```{r}
 results_imp_2t <- run.jags("logistic_2test.txt", n.chains=2, data=lr_2test)
-# Remmber to check convergence and effective sample size!
+# Remember to check convergence and effective sample size!
 # plot(results_imp_2t)
 results_imp_2t
 ```
