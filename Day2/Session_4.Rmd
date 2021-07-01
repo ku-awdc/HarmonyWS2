@@ -349,6 +349,76 @@ results <- run.jags('covidmodel.txt', sample=50000)
 results
 ```
 
+## Adding "Bayesian p-values"
+
+What on earth is that?
+
+  - "Bayesian p-values" are effectively the probability that a particular parameter has a positive (or negative) value, i.e. the probability that it is non-zero
+  - The interpretaiton is actually much cleaner than frequentist p-values, so it is probably a bad name for them...
+    
+- - -
+
+Calculation in JAGS code:
+
+```{r echo = FALSE}
+modcod <- readLines("covidmodel.txt")
+inspt <- which(modcod=="	 # covsp23 <- 0  ## if the specificity of these tests can be assumed to be independent")
+stopifnot(length(inspt)==1)
+ntext <- "
+     bpv_cse23 <- covse23 <= 0
+     bpv_csp23 <- covsp23 <= 0
+
+     #monitor# bpv_cse23, bpv_csp23
+"
+modcod <- c(modcod[1:inspt], ntext, modcod[(inspt+1):length(modcod)])
+cat(modcod, file="covidmodel.txt", sep="\n")
+```
+
+```{r echo=FALSE, comment=''}
+cat(ntext)
+```
+
+- - -
+
+The mean estimate for covse23_bpv and covsp23_bpv is the "Bayesian p-value"
+
+```{r}
+results <- run.jags('covidmodel.txt', sample=50000)
+results
+```
+
+- - -
+
+Alternative in R:
+
+```{r}
+cov23 <- combine.mcmc(results, vars=c("covse23", "covsp23"))
+str(cov23)
+apply(cov23 <= 0, 2, mean)
+```
+
+. . .
+
+[Note:  these numbers are not quite the same as the JAGS version, because the thinning used for calculating summary statistics is slightly different between the two]
+
+- - -
+
+Or even:
+
+```{r}
+results <- add.summary(results, mutate = function(x){
+  list(
+    bpvR_covse23 = x[,"covse23"] <= 0,
+    bpvR_covsp23 = x[,"covsp23"] <= 0
+  )
+})
+summary(results, vars="bpv")
+```
+
+. . .
+
+See `?runjags::add.summary` for more information on mutate
+
 
 ## Practical considerations
 
